@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  @apply bg-surface text-on-surface antialiased;
+}
+
+@layer components {
+  /* Buttons */
+  .btn { @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200; }
+  .btn-primary { @apply btn bg-primary text-on-primary hover:bg-primary-container shadow-soft; }
+  .btn-secondary { @apply btn bg-secondary-container text-on-secondary-container hover:opacity-90 shadow-soft; }
+  .btn-outline { @apply btn bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-high; }
+  .btn-ghost { @apply btn text-on-surface-variant hover:bg-surface-container-high; }
+  .btn-danger { @apply btn bg-error text-on-error hover:opacity-90 shadow-soft; }
+
+  /* Inputs */
+  .input { @apply w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-on-surface-variant/60; }
+
+  /* Cards */
+  .card { @apply bg-surface-container-lowest rounded-xl shadow-soft border border-outline-variant/50; }
+  .card-elevated { @apply bg-surface-container-lowest rounded-xl shadow-elevated border border-outline-variant/50; }
+
+  /* Badges / Chips */
+  .chip { @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold; }
+
+  /* Status chips */
+  .chip-success { @apply chip bg-emerald-50 text-emerald-700 border border-emerald-200; }
+  .chip-warning { @apply chip bg-amber-50 text-amber-700 border border-amber-200; }
+  .chip-danger  { @apply chip bg-red-50 text-red-700 border border-red-200; }
+  .chip-info    { @apply chip bg-blue-50 text-primary border border-blue-200; }
+  .chip-neutral { @apply chip bg-surface-container-high text-on-surface-variant border border-outline-variant; }
+
+  /* Sidebar item */
+  .nav-item { @apply w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-on-surface-variant transition-all hover:bg-surface-container-high; }
+  .nav-item-active { @apply bg-primary text-on-primary font-semibold shadow-soft hover:bg-primary; }
+
+  /* Section headings */
+  .section-title { @apply text-2xl font-bold text-on-surface tracking-tight; }
+  .section-subtitle { @apply text-sm text-on-surface-variant; }
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c1c6d5; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #717785; }
