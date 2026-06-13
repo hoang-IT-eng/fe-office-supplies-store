@@ -77,7 +77,12 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-on-surface-variant block mb-1.5">Mật khẩu</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-on-surface-variant">Mật khẩu</label>
+              <Link to="/forgot-password" className="text-xs text-primary font-semibold hover:underline">
+                Quên mật khẩu?
+              </Link>
+            </div>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
               <input
