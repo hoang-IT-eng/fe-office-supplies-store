@@ -19,39 +19,36 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminInventory from './pages/admin/AdminInventory';
-
 export default function App() {
-  return (
-    <Routes>
+    return (<Routes>
       <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
-        <Route path="products/:id" element={<ProductDetailPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
-        <Route path="forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route index element={<HomePage />}/>
+        <Route path="products/:id" element={<ProductDetailPage />}/>
+        <Route path="login" element={<LoginPage />}/>
+        <Route path="register" element={<RegisterPage />}/>
+        <Route path="forgot-password" element={<ForgotPasswordPage />}/>
+        <Route path="reset-password" element={<ResetPasswordPage />}/>
 
         <Route element={<RequireAuth />}>
-          <Route path="cart" element={<CartPage />} />
-          <Route path="checkout" element={<CheckoutPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="orders/:id" element={<OrderDetailPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="cart" element={<CartPage />}/>
+          <Route path="checkout" element={<CheckoutPage />}/>
+          <Route path="orders" element={<OrdersPage />}/>
+          <Route path="orders/:id" element={<OrderDetailPage />}/>
+          <Route path="profile" element={<ProfilePage />}/>
         </Route>
       </Route>
 
       <Route path="/admin" element={<RequireAdmin />}>
         <Route element={<AdminLayout />}>
-          <Route index element={<Navigate to="products" replace />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="categories" element={<AdminCategories />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="inventory" element={<AdminInventory />} />
+          <Route index element={<Navigate to="products" replace/>}/>
+          <Route path="products" element={<AdminProducts />}/>
+          <Route path="categories" element={<AdminCategories />}/>
+          <Route path="orders" element={<AdminOrders />}/>
+          <Route path="users" element={<AdminUsers />}/>
+          <Route path="inventory" element={<AdminInventory />}/>
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
-  );
+      <Route path="*" element={<Navigate to="/"/>}/>
+    </Routes>);
 }
