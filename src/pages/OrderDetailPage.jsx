@@ -28,6 +28,8 @@ export default function OrderDetailPage() {
         return <div className="text-center py-20 text-on-surface-variant">Đang tải...</div>;
     }
     const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
+    const subtotal = Number(order.subtotalAmount ?? order.totalAmount);
+    const discount = Number(order.discountAmount ?? 0);
     return (<div className="space-y-6">
       <Link to="/orders" className="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary">
         <ArrowLeft size={16}/> Quay lại danh sách đơn hàng
@@ -85,8 +87,14 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-on-surface-variant">Tạm tính</span>
-              <span className="font-semibold">{fmtVND(order.totalAmount)}</span>
+              <span className="font-semibold">{fmtVND(subtotal)}</span>
             </div>
+            {discount > 0 && (<>
+                <div className="flex justify-between text-success">
+                  <span>Giảm giá {order.voucher?.code ? `(${order.voucher.code})` : ''}</span>
+                  <span className="font-semibold">-{fmtVND(discount)}</span>
+                </div>
+              </>)}
             <div className="border-t border-outline-variant my-2"/>
             <div className="flex justify-between items-baseline">
               <span className="font-bold">Tổng cộng</span>

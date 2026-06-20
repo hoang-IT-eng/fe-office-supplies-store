@@ -19,6 +19,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminInventory from './pages/admin/AdminInventory';
+import AdminVouchers from './pages/admin/AdminVouchers';
 export default function App() {
     return (<Routes>
       <Route element={<Layout />}>
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrders />}/>
           <Route path="users" element={<AdminUsers />}/>
           <Route path="inventory" element={<AdminInventory />}/>
+          <Route path="vouchers" element={<AdminVouchers />}/>
         </Route>
       </Route>
 

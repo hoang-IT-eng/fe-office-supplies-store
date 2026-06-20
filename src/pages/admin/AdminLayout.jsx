@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Package, FolderTree, Warehouse, Receipt, Users, Pencil, LogOut, Search, Bell, Settings, } from 'lucide-react';
+import { Package, FolderTree, Warehouse, Receipt, Users, Ticket, Pencil, LogOut, Search, Bell, Settings, } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/auth';
 const NAV = [
@@ -7,6 +7,7 @@ const NAV = [
     { to: 'categories', label: 'Quản lý danh mục', icon: FolderTree },
     { to: 'inventory', label: 'Quản lý kho hàng', icon: Warehouse },
     { to: 'orders', label: 'Quản lý đơn hàng', icon: Receipt },
+    { to: 'vouchers', label: 'Quản lý voucher', icon: Ticket },
     { to: 'users', label: 'Quản lý tài khoản', icon: Users },
 ];
 export default function AdminLayout() {
