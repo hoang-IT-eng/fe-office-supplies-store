@@ -40,6 +40,7 @@ function render() {
         <div class="flex-1 min-w-0">
           <a href="product?id=${item.product.id}" class="font-semibold block truncate">${esc(item.product.name)}</a>
           <div class="text-primary text-sm font-bold mt-1">${fmtVND(price)}</div>
+          <div class="text-xs muted mt-1">Tồn kho: ${item.product.inventory?.quantity ?? 0}</div>
         </div>
         <div class="qty-box">
           <button data-dec="${item.id}">−</button>

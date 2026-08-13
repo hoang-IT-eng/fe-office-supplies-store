@@ -1,43 +1,88 @@
+/**
+ * Trang quản lý tài khoản (admin)
+ * CSS: style inline + admin-ui.js — không dùng utility class.
+ */
+
 import { api } from '../../api.js';
 import { fmtDate, esc } from '../../format.js';
 import { toast } from '../../toast.js';
 import { mountAdminChrome, icons, requireAdmin } from '../../layout.js';
+import {
+  CARD,
+  MUTED,
+  CHIP,
+  ICON_BTN,
+  AVATAR,
+  TABLE_HEAD,
+  TH,
+  TD,
+  rowBorder,
+  PAGE_TITLE,
+  PAGE_SUBTITLE,
+  LIST_HEADER,
+  LOADING,
+  statCard,
+  statIcon,
+} from '../../admin-ui.js';
 
 const app = document.getElementById('app');
 let users = [];
 
 function render() {
   const adminCount = users.filter((u) => u.role === 'ADMIN').length;
-  const customerCount = users.filter((u) => u.role === 'CUSTOMER').length;
+  const customers = users.filter((u) => u.role !== 'ADMIN');
+  const customerCount = customers.length;
 
   app.innerHTML = `
-    <div class="space-y-6">
-      <section class="flex flex-wrap justify-between items-end gap-6">
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      <!-- Tiêu đề + 2 ô thống kê -->
+      <section style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:1.5rem">
         <div>
-          <h1 class="page-title">Quản lý tài khoản</h1>
-          <div class="flex items-center gap-2 muted mt-1"><i data-lucide="users" class="text-primary" style="width:16px;height:16px"></i><p class="text-sm">Quản lý người dùng, khóa/mở khóa hoặc xóa tài khoản.</p></div>
-        </div>
-        <div class="flex gap-3">
-          <div class="card stat-card" style="border-left-color:var(--primary);min-width:180px">
-            <div class="stat-icon" style="background:var(--primary-fixed);color:var(--primary)"><i data-lucide="shield-check" style="width:20px;height:20px"></i></div>
-            <div><p class="text-xs font-bold uppercase tracking-wide muted">Admin</p><p class="text-xl font-extrabold text-primary">${adminCount}</p></div>
+          <h1 style="${PAGE_TITLE}">Quản lý tài khoản</h1>
+          <div style="${PAGE_SUBTITLE}">
+            <i data-lucide="users" style="width:16px;height:16px;color:var(--primary)"></i>
+            <p>Quản lý người dùng, khóa/mở khóa hoặc xóa tài khoản.</p>
           </div>
-          <div class="card stat-card" style="border-left-color:var(--secondary);min-width:180px">
-            <div class="stat-icon" style="background:var(--secondary-container);color:var(--on-secondary-container)"><i data-lucide="users" style="width:20px;height:20px"></i></div>
-            <div><p class="text-xs font-bold uppercase tracking-wide muted">Khách hàng</p><p class="text-xl font-extrabold" style="color:var(--secondary)">${customerCount}</p></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.75rem">
+          <div style="${statCard('var(--primary)')}">
+            <div style="${statIcon('var(--primary-fixed)', 'var(--primary)')}">
+              <i data-lucide="shield-check" style="width:20px;height:20px"></i>
+            </div>
+            <div>
+              <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;${MUTED}">Admin</p>
+              <p style="font-size:1.25rem;font-weight:800;color:var(--primary)">${adminCount}</p>
+            </div>
+          </div>
+          <div style="${statCard('var(--secondary)')}">
+            <div style="${statIcon('var(--secondary-container)', 'var(--on-secondary-container)')}">
+              <i data-lucide="users" style="width:20px;height:20px"></i>
+            </div>
+            <div>
+              <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;${MUTED}">Khách hàng</p>
+              <p style="font-size:1.25rem;font-weight:800;color:var(--secondary)">${customerCount}</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <div class="card overflow-hidden">
-        <div class="px-6 py-4" style="border-bottom:1px solid var(--outline-variant);background:rgba(241,243,252,.4)"><h3 class="text-sm font-bold">Danh sách tài khoản (${users.length})</h3></div>
-        <div class="overflow-x-auto">
-          <table class="min-w-table">
-            <thead class="table-head"><tr>
-              <th class="table-cell">Người dùng</th><th class="table-cell">Email</th><th class="table-cell">SĐT</th>
-              <th class="table-cell">Vai trò</th><th class="table-cell">Trạng thái</th><th class="table-cell">Ngày tạo</th><th class="table-cell text-right">Thao tác</th>
-            </tr></thead>
-            <tbody class="divide-y">${users.map(row).join('')}</tbody>
+      <!-- Bảng tài khoản -->
+      <div style="${CARD};overflow:hidden">
+        <div style="${LIST_HEADER}">Danh sách tài khoản (${customers.length})</div>
+        <div style="overflow-x:auto">
+          <table style="border-collapse:collapse;width:100%;min-width:900px">
+            <thead style="${TABLE_HEAD}">
+              <tr>
+                <th style="${TH}">Người dùng</th>
+                <th style="${TH}">Email</th>
+                <th style="${TH}">SĐT</th>
+                <th style="${TH}">Vai trò</th>
+                <th style="${TH}">Trạng thái</th>
+                <th style="${TH}">Ngày tạo</th>
+                <th style="${TH};text-align:right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>${customers.map(row).join('')}</tbody>
           </table>
         </div>
       </div>
@@ -50,19 +95,38 @@ function render() {
   icons();
 }
 
-function row(u) {
-  return `<tr>
-    <td class="table-cell"><div class="flex items-center gap-3"><div class="avatar" style="width:2.5rem;height:2.5rem">${(u.fullName || 'U').charAt(0).toUpperCase()}</div><div class="font-bold">${esc(u.fullName || '')}</div></div></td>
-    <td class="table-cell text-sm">${esc(u.email)}</td>
-    <td class="table-cell text-sm muted">${esc(u.phone || '—')}</td>
-    <td class="table-cell">${u.role === 'ADMIN' ? '<span class="chip chip-info"><i data-lucide="shield-check" style="width:12px;height:12px"></i> Admin</span>' : '<span class="chip chip-neutral">Khách hàng</span>'}</td>
-    <td class="table-cell">${u.isActive ? '<span class="chip chip-success">Hoạt động</span>' : '<span class="chip chip-danger">Bị khóa</span>'}</td>
-    <td class="table-cell text-xs muted">${fmtDate(u.createdAt)}</td>
-    <td class="table-cell text-right">
-      <button data-toggle="${u.id}" data-active="${u.isActive}" class="icon-btn" style="color:var(--primary)" title="${u.isActive ? 'Khóa' : 'Mở khóa'}"><i data-lucide="${u.isActive ? 'lock' : 'lock-open'}" style="width:16px;height:16px"></i></button>
-      <button data-del="${u.id}" class="icon-btn" title="Xóa"><i data-lucide="trash-2" style="width:16px;height:16px"></i></button>
-    </td>
-  </tr>`;
+function row(u, index) {
+  const cell = `${rowBorder(index)}${TD}`;
+  const roleChip =
+    u.role === 'ADMIN'
+      ? `<span style="${CHIP.info}"><i data-lucide="shield-check" style="width:12px;height:12px"></i> Admin</span>`
+      : `<span style="${CHIP.neutral}">Khách hàng</span>`;
+  const statusChip = u.isActive
+    ? `<span style="${CHIP.success}">Hoạt động</span>`
+    : `<span style="${CHIP.danger}">Bị khóa</span>`;
+
+  return `
+    <tr>
+      <td style="${cell}">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <div style="${AVATAR};width:2.5rem;height:2.5rem">${(u.fullName || 'U').charAt(0).toUpperCase()}</div>
+          <div style="font-weight:700">${esc(u.fullName || '')}</div>
+        </div>
+      </td>
+      <td style="${cell}font-size:.875rem">${esc(u.email)}</td>
+      <td style="${cell}font-size:.875rem;${MUTED}">${esc(u.phone || '—')}</td>
+      <td style="${cell}">${roleChip}</td>
+      <td style="${cell}">${statusChip}</td>
+      <td style="${cell}font-size:.75rem;${MUTED}">${fmtDate(u.createdAt)}</td>
+      <td style="${cell}text-align:right">
+        <button type="button" data-toggle="${u.id}" data-active="${u.isActive}" style="${ICON_BTN};color:var(--primary)" title="${u.isActive ? 'Khóa' : 'Mở khóa'}">
+          <i data-lucide="${u.isActive ? 'lock' : 'lock-open'}" style="width:16px;height:16px"></i>
+        </button>
+        <button type="button" data-del="${u.id}" style="${ICON_BTN}" title="Xóa">
+          <i data-lucide="trash-2" style="width:16px;height:16px"></i>
+        </button>
+      </td>
+    </tr>`;
 }
 
 async function toggleActive(id, isActive) {
@@ -90,7 +154,7 @@ async function reload() {
 async function init() {
   if (!requireAdmin()) return;
   mountAdminChrome('users');
-  app.innerHTML = '<div class="loading-block">Đang tải...</div>';
+  app.innerHTML = `<div style="${LOADING}">Đang tải...</div>`;
   await reload();
 }
 

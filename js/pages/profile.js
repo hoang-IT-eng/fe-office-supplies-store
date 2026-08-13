@@ -53,8 +53,8 @@ function render(profile) {
             <input id="newPassword" class="input pl-10" type="password" minlength="6" required /></div>
         </div>
         <div>
-          <label class="field-label">Xác nhận mật khẩu mới</label>
-          <div class="input-wrap"><i data-lucide="lock" class="input-icon" style="width:16px;height:16px"></i>
+           <label class="field-label">Xác nhận mật khẩu mới</label>
+           <div class="input-wrap"><i data-lucide="lock" class="input-icon" style="width:16px;height:16px"></i>
             <input id="confirm" class="input pl-10" type="password" minlength="6" required /></div>
         </div>
         <button id="save-password" class="btn btn-primary"><i data-lucide="key-round" style="width:16px;height:16px"></i> Đổi mật khẩu</button>

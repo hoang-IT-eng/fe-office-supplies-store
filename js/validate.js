@@ -170,6 +170,10 @@ export function clearErrors(root) {
 /** Xóa lỗi khi người dùng sửa input. */
 export function bindLiveClear(root) {
   if (!root) return;
+  // Tắt bong bóng lỗi mặc định theo ngôn ngữ trình duyệt để mọi thông báo
+  // ràng buộc đều được guardForm hiển thị bằng tiếng Việt.
+  if (root.matches?.('form')) root.noValidate = true;
+
   root.querySelectorAll('input, select, textarea').forEach((el) => {
     const handler = () => {
       el.classList.remove('input-invalid');

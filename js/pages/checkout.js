@@ -41,7 +41,8 @@ function shell() {
     <div class="space-y-6">
       <div class="flex items-center gap-3"><i data-lucide="credit-card" class="text-primary" style="width:24px;height:24px"></i><h1 class="section-title">Thanh toán</h1></div>
       <form id="checkout-form" class="grid gap-6 lg:grid-cols-3">
-        <div class="lg:col-span-2 card p-6 space-y-4">
+        <div class="lg:col-span-2 space-y-6">
+        <div class="card p-6 space-y-4">
           <h2 class="font-bold flex items-center gap-2"><i data-lucide="map-pin" class="text-primary" style="width:18px;height:18px"></i> Thông tin giao hàng (GHN)</h2>
           <div class="grid gap-3 md:grid-cols-2">
             <div><label class="field-label">Họ tên người nhận</label>
@@ -58,9 +59,10 @@ function shell() {
           <div><label class="field-label flex items-center gap-1"><i data-lucide="file-text" style="width:14px;height:14px"></i> Ghi chú (tùy chọn)</label><textarea id="note" class="input" rows="2" placeholder="Ghi chú cho người giao hàng..."></textarea></div>
         </div>
 
-        <div class="lg:col-span-2 card p-6 space-y-2">
+        <div class="card p-6 space-y-2">
           <h2 class="font-bold flex items-center gap-2"><i data-lucide="wallet" class="text-primary" style="width:18px;height:18px"></i> Phương thức thanh toán</h2>
           <p class="text-sm flex items-center gap-2"><i data-lucide="banknote" style="width:16px;height:16px"></i> <span><b>COD</b> — Thanh toán tiền mặt khi nhận hàng</span></p>
+        </div>
         </div>
 
         <div class="card-elevated p-6 h-fit lg:sticky">
@@ -82,9 +84,10 @@ function renderSummaryItems() {
   el.innerHTML = cart.items
     .map((item) => {
       const price = Number(item.product.discountPrice) > 0 ? Number(item.product.discountPrice) : Number(item.product.price);
+      const stock = item.product.inventory?.quantity ?? 0;
       return `<div class="flex gap-3 text-sm">
         <img src="${fileUrl(item.product.images?.[0])}" style="width:3rem;height:3rem;border-radius:.5rem;object-fit:cover;background:var(--surface-low);flex-shrink:0" />
-        <div class="flex-1 min-w-0"><div class="font-semibold truncate">${esc(item.product.name)}</div><div class="text-xs muted">SL: ${item.quantity}</div></div>
+        <div class="flex-1 min-w-0"><div class="font-semibold truncate">${esc(item.product.name)}</div><div class="text-xs muted">SL: ${item.quantity} · Tồn kho: ${stock}</div></div>
         <div class="font-bold" style="white-space:nowrap">${fmtVND(price * item.quantity)}</div>
       </div>`;
     })

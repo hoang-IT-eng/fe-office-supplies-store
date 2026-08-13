@@ -5,6 +5,170 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Văn phòng phẩm Trần Huy Hoàng - Mua sắm trực tuyến</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS riêng của trang chủ, viết trực tiếp trong file HTML này (internal CSS) -->
+  <style>
+    /* ===== Bố cục chung: các khối của trang chủ xếp dọc, cách nhau 2rem ===== */
+    .home-page {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* ===== Hộp "Tìm kiếm & lọc sản phẩm" ===== */
+    .filter-box {
+      padding: 1.25rem;
+    }
+
+    /* Dòng tiêu đề: icon nằm cạnh chữ */
+    .filter-heading {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .filter-heading h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .filter-heading-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--primary);
+    }
+
+    /* Hàng ô nhập: 5 cột (từ khóa, danh mục, giá từ, giá đến, nút Lọc) */
+    .filter-fields {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1fr 1fr auto;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    /* Màn hình nhỏ: xếp các ô nhập thành 1 cột cho dễ bấm */
+    @media (max-width: 768px) {
+      .filter-fields {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Ô tìm kiếm có icon kính lúp nằm bên trong, phía trái */
+    .filter-search {
+      position: relative;
+    }
+    .filter-search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--on-surface-variant);
+      pointer-events: none;
+    }
+    /* Chừa chỗ trống bên trái để chữ không đè lên icon */
+    .filter-search-input {
+      padding-left: 2.5rem;
+    }
+
+    /* Hàng nút chip danh mục nhanh, tự xuống dòng khi hết chỗ */
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .filter-chip-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ===== Thẻ sản phẩm ===== */
+
+    /* Icon hiện thay cho ảnh khi sản phẩm chưa có ảnh */
+    .product-card-no-image {
+      width: 48px;
+      height: 48px;
+      color: var(--on-surface-variant);
+    }
+
+    /* Nhãn "-20%" ở góc trên bên trái ảnh */
+    .product-discount-badge {
+      position: absolute;
+      top: 0.5rem;
+      left: 0.5rem;
+      background: var(--tertiary);
+      color: #ffffff;
+    }
+
+    /* Nhãn "Hết hàng" ở góc trên bên phải ảnh */
+    .product-stock-badge {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+    }
+
+    .product-card-category {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--on-surface-variant);
+    }
+
+    /* Tên sản phẩm chỉ hiện tối đa 2 dòng, dài hơn thì hiện dấu ... */
+    .product-card-name {
+      font-weight: 600;
+      margin-top: 0.125rem;
+      min-height: 44px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Dòng giá: giá bán và giá cũ nằm cạnh nhau */
+    .product-card-prices {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .product-card-price {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .product-card-old-price {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+      text-decoration: line-through;
+    }
+    .product-card-button-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ===== Thông báo trạng thái của danh sách sản phẩm ===== */
+    .products-loading {
+      text-align: center;
+      padding: 5rem 0;
+      color: var(--on-surface-variant);
+    }
+    .products-empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--on-surface-variant);
+    }
+
+    /* ===== Phân trang ===== */
+    .pagination-icon {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
