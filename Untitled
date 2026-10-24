@@ -1,0 +1,3 @@
+const vanBan = await res.text();     // chuỗi '{"items":[...],"total":13,...}'
+duLieu = JSON.parse(vanBan);         // thành object JS
+return duLieu;  

@@ -3,16 +3,488 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chi tiết đơn hàng - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Chi tiết đơn hàng - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang chi tiết đơn hàng -->
+  <style>
+    .order-page {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ===== Thẻ đầu trang: mã đơn + trạng thái + nút hủy ===== */
+    .order-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .order-header-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .order-header-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.5rem;
+      background: var(--primary);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .order-header-icon .lucide {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    .order-code {
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+    .order-created {
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+    .order-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    /* ===== Khối theo dõi vận chuyển GHN ===== */
+    .order-ghn-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    /* Lưới 2 cột: mã vận đơn | trạng thái */
+    .order-ghn-grid {
+      display: grid;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .order-ghn-full {
+      grid-column: 1 / -1;
+    }
+    /* Lịch sử vận chuyển: cuộn dọc nếu dài */
+    .order-ghn-log {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--outline-variant);
+    }
+    .order-ghn-log-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      margin-bottom: 0.5rem;
+    }
+    .order-ghn-log-list {
+      max-height: 12rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      font-size: 0.875rem;
+    }
+    .order-ghn-log-item {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .order-ghn-log-time {
+      color: var(--on-surface-variant);
+      flex-shrink: 0;
+    }
+    .order-ghn-link {
+      display: inline-block;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    /* ===== Hai cột: thông tin nhận hàng | tổng kết ===== */
+    .order-two-columns {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .order-info-list {
+      font-size: 0.875rem;
+      line-height: 1.8;
+    }
+    .order-note {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--outline-variant);
+      color: var(--on-surface-variant);
+      font-style: italic;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <p class="loading-block" id="khoi-dang-tai">Đang tải...</p>
+
+      <!-- Thông báo khi không tải được đơn hàng -->
+      <div class="card empty-block" id="khoi-loi" hidden></div>
+
+      <div class="order-page" id="khoi-don-hang" hidden>
+        <a href="orders.html" class="back-link">
+          <i data-lucide="arrow-left"></i> Quay lại danh sách đơn hàng
+        </a>
+
+        <!-- Đầu trang: mã đơn, ngày tạo, chip trạng thái, nút hủy -->
+        <section class="card card-elevated order-header">
+          <div class="order-header-left">
+            <div class="order-header-icon"><i data-lucide="receipt"></i></div>
+            <div>
+              <div class="order-code mono" id="ma-don"></div>
+              <div class="order-created muted" id="ngay-tao"></div>
+              <div class="order-chips" id="khoi-chip-trang-thai"></div>
+            </div>
+          </div>
+          <button type="button" id="nut-huy-don" class="btn btn-danger" hidden>
+            <i data-lucide="circle-x"></i> Hủy đơn
+          </button>
+        </section>
+
+        <!-- Theo dõi vận chuyển GHN (chỉ hiện khi đơn đã có mã vận đơn) -->
+        <section class="card" id="khoi-ghn" hidden>
+          <div class="order-ghn-header">
+            <h2 class="block-title"><i data-lucide="truck"></i> Theo dõi vận chuyển GHN</h2>
+            <button type="button" id="nut-cap-nhat-ghn" class="btn btn-outline btn-sm">
+              <i data-lucide="refresh-cw"></i> Cập nhật
+            </button>
+          </div>
+
+          <div class="order-ghn-grid">
+            <div><span class="muted">Mã vận đơn:</span> <b class="mono" id="ma-van-don"></b></div>
+            <div><span class="muted">Trạng thái GHN:</span> <b id="trang-thai-ghn"></b></div>
+            <div class="order-ghn-full" id="khoi-du-kien-giao" hidden>
+              <span class="muted">Dự kiến giao:</span> <span id="ngay-du-kien"></span>
+            </div>
+          </div>
+
+          <div class="order-ghn-log" id="khoi-lich-su" hidden>
+            <p class="order-ghn-log-title">Lịch sử vận chuyển</p>
+            <div class="order-ghn-log-list" id="danh-sach-lich-su"></div>
+          </div>
+
+          <a id="link-tra-cuu-ghn" class="order-ghn-link" target="_blank" rel="noreferrer">Tra cứu trên GHN →</a>
+        </section>
+
+        <!-- Thông tin nhận hàng + tổng kết tiền -->
+        <div class="order-two-columns">
+          <section class="card">
+            <h2 class="block-title"><i data-lucide="map-pin"></i> Thông tin nhận hàng</h2>
+            <div class="order-info-list">
+              <div><span class="muted">Người nhận:</span> <b id="ten-nguoi-nhan"></b></div>
+              <div><span class="muted">Điện thoại:</span> <span id="dien-thoai"></span></div>
+              <div><span class="muted">Địa chỉ:</span> <span id="dia-chi-giao"></span></div>
+              <div class="order-note" id="khoi-ghi-chu" hidden></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="block-title"><i data-lucide="package"></i> Tổng kết</h2>
+            <div class="summary-list" id="khoi-tong-ket"></div>
+          </section>
+        </div>
+
+        <!-- Bảng sản phẩm trong đơn -->
+        <section class="card card-flush">
+          <div class="list-header">Chi tiết sản phẩm</div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="data-table-head">
+                <tr>
+                  <th>Tên sản phẩm</th>
+                  <th class="cell-money">Đơn giá</th>
+                  <th class="cell-quantity">SL</th>
+                  <th class="cell-money">Thành tiền</th>
+                  <!-- Cột "Đánh giá" chỉ hiện khi đơn đã giao xong -->
+                  <th class="cell-actions" id="cot-danh-gia" hidden>Đánh giá</th>
+                </tr>
+              </thead>
+              <tbody id="danh-sach-san-pham"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/order-detail.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { duongDanTrang } from './js/config.js';
+    import {
+      dinhDangTien,
+      dinhDangNgay,
+      nhanTrangThaiDon,
+      chipTrangThaiDon,
+      nhanTrangThaiGhn,
+      nhanPhuongThucThanhToan,
+      nhanTrangThaiThanhToan,
+      chipTrangThaiThanhToan,
+      chuoiAnToan,
+    } from './js/format.js';
+    import { thongBao } from './js/toast.js';
+    import { dungKhungKhachHang, veIcon, batBuocDangNhap } from './js/layout.js';
+
+    // Id đơn hàng lấy từ URL: order-detail.html?id=...
+    const donHangId = new URLSearchParams(location.search).get('id');
+
+    let donHang = null; // dữ liệu đơn từ API
+    let tracking = null; // dữ liệu theo dõi GHN (có thể null)
+
+    /** Khách chỉ được hủy đơn khi còn ở trạng thái chờ xác nhận / đã xác nhận */
+    function coTheHuyDon() {
+      return donHang.status === 'PENDING' || donHang.status === 'CONFIRMED';
+    }
+
+    // ------------------------------------------------- Vẽ từng khối của trang
+
+    /** Vẽ đầu trang: mã đơn, ngày tạo, các chip trạng thái, nút hủy */
+    function veKhoiDauTrang() {
+      document.getElementById('ma-don').textContent = `#${donHang.code}`;
+      document.getElementById('ngay-tao').textContent = `Tạo lúc ${dinhDangNgay(donHang.createdAt)}`;
+
+      let htmlChip = `
+        <span class="chip ${chipTrangThaiDon[donHang.status] || 'chip-neutral'}">
+          ${nhanTrangThaiDon[donHang.status] || chuoiAnToan(donHang.status)}
+        </span>`;
+
+      if (donHang.paymentMethod) {
+        htmlChip += `<span class="chip chip-neutral">
+          ${nhanPhuongThucThanhToan[donHang.paymentMethod] || chuoiAnToan(donHang.paymentMethod)}
+        </span>`;
+      }
+      if (donHang.paymentStatus) {
+        htmlChip += `<span class="chip ${chipTrangThaiThanhToan[donHang.paymentStatus] || 'chip-neutral'}">
+          ${nhanTrangThaiThanhToan[donHang.paymentStatus] || chuoiAnToan(donHang.paymentStatus)}
+        </span>`;
+      }
+      document.getElementById('khoi-chip-trang-thai').innerHTML = htmlChip;
+
+      document.getElementById('nut-huy-don').hidden = !coTheHuyDon();
+    }
+
+    /** Vẽ khối theo dõi vận chuyển GHN (ẩn khi đơn chưa có mã vận đơn) */
+    function veKhoiGhn() {
+      const khoiGhn = document.getElementById('khoi-ghn');
+      const maVanDon = tracking?.ghnOrderCode || donHang.ghnOrderCode;
+
+      // Chưa có vận đơn thì ẩn cả khối
+      if (!maVanDon) {
+        khoiGhn.hidden = true;
+        return;
+      }
+      khoiGhn.hidden = false;
+
+      const nhanGhn =
+        tracking?.ghnStatusLabel || nhanTrangThaiGhn[donHang.ghnStatus] || donHang.ghnStatus || '—';
+
+      document.getElementById('ma-van-don').textContent = maVanDon;
+      document.getElementById('trang-thai-ghn').textContent = nhanGhn;
+      document.getElementById('link-tra-cuu-ghn').href =
+        `https://donhang.ghn.vn/?order_code=${encodeURIComponent(maVanDon)}`;
+
+      const khoiDuKien = document.getElementById('khoi-du-kien-giao');
+      khoiDuKien.hidden = !donHang.ghnExpectedDelivery;
+      if (donHang.ghnExpectedDelivery) {
+        document.getElementById('ngay-du-kien').textContent = dinhDangNgay(donHang.ghnExpectedDelivery);
+      }
+
+      // Lịch sử di chuyển của kiện hàng do GHN trả về
+      const khoiLichSu = document.getElementById('khoi-lich-su');
+      const coLichSu = Boolean(tracking?.log?.length);
+      khoiLichSu.hidden = !coLichSu;
+      if (coLichSu) {
+        document.getElementById('danh-sach-lich-su').innerHTML = tracking.log
+          .map(
+            (dong) => `
+              <div class="order-ghn-log-item">
+                <span class="order-ghn-log-time">${dong.updated_date ? dinhDangNgay(dong.updated_date) : ''}</span>
+                <span>${chuoiAnToan(dong.status || dong.action || dong.message || '')}</span>
+              </div>`,
+          )
+          .join('');
+      }
+    }
+
+    /** Vẽ thông tin người nhận và ghi chú */
+    function veThongTinNhanHang() {
+      document.getElementById('ten-nguoi-nhan').textContent = donHang.shippingName || '';
+      document.getElementById('dien-thoai').textContent = donHang.shippingPhone || '';
+      document.getElementById('dia-chi-giao').textContent = donHang.shippingAddress || '';
+
+      const khoiGhiChu = document.getElementById('khoi-ghi-chu');
+      khoiGhiChu.hidden = !donHang.note;
+      khoiGhiChu.textContent = donHang.note ? `Ghi chú: ${donHang.note}` : '';
+    }
+
+    /** Vẽ các dòng tiền: tạm tính, giảm giá, phí ship, tổng cộng */
+    function veTongKet() {
+      const tienHang = Number(donHang.subtotalAmount ?? donHang.totalAmount);
+      const tienGiam = Number(donHang.discountAmount ?? 0);
+      const phiShip = Number(donHang.shippingFee ?? 0);
+      const maVoucher = donHang.voucher?.code ? ` (${chuoiAnToan(donHang.voucher.code)})` : '';
+
+      document.getElementById('khoi-tong-ket').innerHTML = `
+        <div class="summary-row">
+          <span class="summary-row-label">Số sản phẩm</span>
+          <span class="summary-row-value">${donHang.items.length}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-row-label">Tạm tính</span>
+          <span class="summary-row-value">${dinhDangTien(tienHang)}</span>
+        </div>
+        ${
+          tienGiam > 0
+            ? `<div class="summary-row summary-row-discount">
+                 <span>Giảm giá${maVoucher}</span>
+                 <span class="summary-row-value">-${dinhDangTien(tienGiam)}</span>
+               </div>`
+            : ''
+        }
+        ${
+          phiShip > 0
+            ? `<div class="summary-row">
+                 <span class="summary-row-label">Phí vận chuyển (GHN)</span>
+                 <span class="summary-row-value">${dinhDangTien(phiShip)}</span>
+               </div>`
+            : ''
+        }
+        <div class="divider"></div>
+        <div class="summary-total">
+          <span class="summary-total-label">Tổng cộng</span>
+          <span class="summary-total-value">${dinhDangTien(donHang.totalAmount)}</span>
+        </div>`;
+    }
+
+    /** Vẽ bảng sản phẩm; đơn đã giao xong thì thêm cột nút "Đánh giá" */
+    function veBangSanPham() {
+      const daGiaoXong = donHang.status === 'COMPLETED';
+      document.getElementById('cot-danh-gia').hidden = !daGiaoXong;
+
+      document.getElementById('danh-sach-san-pham').innerHTML = donHang.items
+        .map((dong) => {
+          let cotDanhGia = '';
+          if (daGiaoXong) {
+            const sanPhamId = dong.product?.id;
+            cotDanhGia = sanPhamId
+              ? `<td class="cell-actions">
+                   <a href="${duongDanTrang('product.html', { id: sanPhamId }, 'reviews')}" class="btn btn-outline btn-sm">
+                     <i data-lucide="star"></i> Đánh giá
+                   </a>
+                 </td>`
+              : '<td class="cell-actions muted">Sản phẩm không còn</td>';
+          }
+
+          return `
+            <tr>
+              <td class="cell-strong">${chuoiAnToan(dong.productName)}</td>
+              <td class="cell-money">${dinhDangTien(dong.unitPrice)}</td>
+              <td class="cell-quantity">${dong.quantity}</td>
+              <td class="cell-money cell-strong">${dinhDangTien(dong.subtotal)}</td>
+              ${cotDanhGia}
+            </tr>`;
+        })
+        .join('');
+    }
+
+    /** Vẽ lại toàn bộ trang theo dữ liệu đơn + tracking hiện tại */
+    function veTrang() {
+      document.getElementById('khoi-dang-tai').hidden = true;
+      document.getElementById('khoi-don-hang').hidden = false;
+
+      veKhoiDauTrang();
+      veKhoiGhn();
+      veThongTinNhanHang();
+      veTongKet();
+      veBangSanPham();
+      veIcon();
+    }
+
+    // ------------------------------------------------------------ Gọi API
+
+    /** Gọi API lấy chi tiết đơn hàng rồi vẽ lại trang */
+    async function taiDonHang() {
+      donHang = await api.get(`/orders/${donHangId}`);
+      veTrang();
+    }
+
+    /** Gọi API lấy trạng thái vận chuyển GHN (không có thì bỏ qua) */
+    async function taiTracking() {
+      try {
+        tracking = await api.get(`/shipping/orders/${donHangId}/tracking`);
+      } catch {
+        tracking = null;
+      }
+      if (donHang) veTrang();
+    }
+
+    /** Xác nhận rồi gọi API hủy đơn hàng */
+    async function xuLyHuyDon() {
+      if (!confirm('Bạn chắc chắn muốn hủy đơn?')) return;
+
+      try {
+        await api.patch(`/orders/${donHangId}/cancel`);
+        thongBao.thanhCong('Đã hủy đơn hàng');
+        await taiDonHang();
+        await taiTracking();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không hủy được đơn');
+      }
+    }
+
+    /** Hiện thông báo lỗi thay cho nội dung trang */
+    function hienLoi(noiDung) {
+      document.getElementById('khoi-dang-tai').hidden = true;
+      document.getElementById('khoi-don-hang').hidden = true;
+      const khoiLoi = document.getElementById('khoi-loi');
+      khoiLoi.hidden = false;
+      khoiLoi.textContent = noiDung;
+    }
+
+    /** Khởi động trang chi tiết đơn hàng */
+    async function khoiDong() {
+      if (!batBuocDangNhap()) return;
+      dungKhungKhachHang('orders');
+
+      if (!donHangId) {
+        hienLoi('Không tìm thấy đơn hàng');
+        return;
+      }
+
+      document.getElementById('nut-huy-don').addEventListener('click', xuLyHuyDon);
+      document.getElementById('nut-cap-nhat-ghn').addEventListener('click', taiTracking);
+
+      try {
+        await taiDonHang();
+        await taiTracking();
+      } catch (loi) {
+        hienLoi(loi?.response?.data?.message || 'Không tải được chi tiết đơn hàng');
+      }
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

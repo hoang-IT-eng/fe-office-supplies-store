@@ -5,23 +5,321 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản lý kho hàng - Admin</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+
+  <!-- CSS RIÊNG của trang quản lý kho hàng -->
+  <style>
+    /* Cột SKU chữ nhỏ cho gọn bảng */
+    .inventory-sku {
+      font-size: 0.75rem;
+    }
+    .inventory-toolbar {
+      padding: 1rem;
+    }
+    .inventory-toolbar-search {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .inventory-toolbar-search .input-icon-wrap {
+      flex: 1;
+      min-width: 200px;
+      max-width: 28rem;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <div style="display:flex;min-height:100vh;background:var(--surface)">
-    <aside
-      id="admin-aside"
-      style="
-        position:fixed;left:0;top:0;height:100vh;width:16rem;
-        background:var(--surface-lowest);border-right:1px solid var(--outline-variant);
-        display:flex;flex-direction:column;padding:1.5rem 1rem;z-index:40;box-sizing:border-box
-      "
-    ></aside>
-    <main
-      id="app"
-      style="margin-left:16rem;flex:1;padding:2rem;max-width:80rem;width:100%;box-sizing:border-box;min-width:0"
-    ></main>
+  <div class="admin-shell">
+    <aside class="admin-aside" id="admin-aside"></aside>
+
+    <main class="admin-content">
+      <div class="admin-page">
+        <!-- Tiêu đề + 2 ô cảnh báo tồn kho -->
+        <section class="admin-page-header">
+          <div>
+            <div class="admin-kicker">
+              <span class="ms material-symbols-outlined">warehouse</span>
+              <span>Kiểm soát tồn kho</span>
+            </div>
+            <h1 class="page-title" style="margin-top:.25rem">Quản lý tồn kho</h1>
+            <div class="page-subtitle">
+              <i data-lucide="warehouse"></i>
+              <p>Quản lý tồn kho và nhận cảnh báo khi xuống dưới ngưỡng tối thiểu.</p>
+            </div>
+          </div>
+
+          <div class="stat-card-group">
+            <div class="stat-card stat-card-warning">
+              <div class="stat-card-icon"><i data-lucide="triangle-alert"></i></div>
+              <div>
+                <p class="stat-card-label">Sắp hết hàng</p>
+                <p class="stat-card-value"><span id="so-sap-het">0</span> sản phẩm</p>
+              </div>
+            </div>
+            <div class="stat-card stat-card-danger">
+              <div class="stat-card-icon"><i data-lucide="circle-x"></i></div>
+              <div>
+                <p class="stat-card-label">Hết hàng</p>
+                <p class="stat-card-value"><span id="so-het-hang">0</span> sản phẩm</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Thanh tìm kiếm theo tên sản phẩm -->
+        <section class="card toolbar inventory-toolbar">
+          <div class="inventory-toolbar-search">
+            <div class="input-icon-wrap">
+              <i data-lucide="search" class="input-icon"></i>
+              <input
+                id="tu-khoa"
+                class="form-input form-input-with-icon"
+                type="search"
+                placeholder="Tìm theo tên sản phẩm..."
+                maxlength="100"
+                autocomplete="off"
+              />
+            </div>
+            <button type="button" id="nut-tim" class="btn btn-primary">
+              <i data-lucide="search"></i> Tìm
+            </button>
+            <button type="button" id="nut-xoa-tim" class="btn btn-outline" hidden>
+              Xóa tìm
+            </button>
+          </div>
+        </section>
+
+        <!-- Bảng tồn kho: sửa số lượng / ngưỡng ngay trên từng dòng -->
+        <div class="card card-flush">
+          <div class="list-header">Bảng tồn kho (<span id="so-dong">0</span>)</div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="data-table-head">
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th>SKU</th>
+                  <th>Số lượng</th>
+                  <th>Ngưỡng cảnh báo</th>
+                  <th>Trạng thái</th>
+                  <th class="cell-actions">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="danh-sach-ton-kho">
+                <tr><td colspan="6" class="cell-empty">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-  <script type="module" src="../js/pages/admin/inventory.js"></script>
+
+  <script type="module">
+    import { api } from '../js/api.js';
+    import { chuoiAnToan } from '../js/format.js';
+    import { thongBao } from '../js/toast.js';
+    import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
+    import { kiemTraCacTruong } from '../js/validate.js';
+
+    const bangEl = document.getElementById('danh-sach-ton-kho');
+    const oTimKiem = document.getElementById('tu-khoa');
+    let danhSachTonKho = [];
+    let tuKhoaTimKiem = '';
+    let henGioTimKiem = 0;
+
+    /** Chip trạng thái tồn kho theo số lượng và ngưỡng cảnh báo */
+    function taoHtmlChipTrangThai(soLuong, nguong) {
+      if (soLuong <= 0) return '<span class="chip chip-danger">Hết hàng</span>';
+      if (soLuong <= nguong) return '<span class="chip chip-warning">Sắp hết</span>';
+      return '<span class="chip chip-success">Ổn định</span>';
+    }
+
+    /** Lọc danh sách tồn kho theo tên sản phẩm */
+    function locTonKho() {
+      const tuKhoa = tuKhoaTimKiem.trim().toLowerCase();
+      if (!tuKhoa) return danhSachTonKho;
+      return danhSachTonKho.filter((muc) => (muc.product?.name || '').toLowerCase().includes(tuKhoa));
+    }
+
+    /** Vẽ 2 ô thống kê phía trên bảng */
+    function veThongKe(danhSachHienThi) {
+      const sapHet = danhSachTonKho.filter((muc) => muc.quantity > 0 && muc.quantity <= muc.lowStockThreshold).length;
+      const hetHang = danhSachTonKho.filter((muc) => muc.quantity <= 0).length;
+
+      document.getElementById('so-sap-het').textContent = sapHet;
+      document.getElementById('so-het-hang').textContent = hetHang;
+      document.getElementById('so-dong').textContent =
+        tuKhoaTimKiem && danhSachHienThi.length !== danhSachTonKho.length
+          ? `${danhSachHienThi.length}/${danhSachTonKho.length}`
+          : danhSachTonKho.length;
+    }
+
+    /** Vẽ các dòng của bảng tồn kho */
+    function veBangTonKho() {
+      const danhSachHienThi = locTonKho();
+      veThongKe(danhSachHienThi);
+
+      if (danhSachTonKho.length === 0) {
+        bangEl.innerHTML = '<tr><td colspan="6" class="cell-empty">Chưa có sản phẩm nào trong kho</td></tr>';
+        return;
+      }
+
+      if (danhSachHienThi.length === 0) {
+        bangEl.innerHTML = '<tr><td colspan="6" class="cell-empty">Không tìm thấy sản phẩm phù hợp</td></tr>';
+        return;
+      }
+
+      bangEl.innerHTML = danhSachHienThi
+        .map((muc) => {
+          const sanPhamId = muc.product.id;
+          return `
+            <tr>
+              <td class="cell-strong">${chuoiAnToan(muc.product.name)}</td>
+              <td class="mono muted inventory-sku">${chuoiAnToan(muc.product.sku)}</td>
+              <td>
+                <input id="so-luong-${chuoiAnToan(sanPhamId)}" class="form-input form-input-narrow"
+                  type="number" min="0" value="${muc.quantity}" aria-label="Số lượng" />
+              </td>
+              <td>
+                <input id="nguong-${chuoiAnToan(sanPhamId)}" class="form-input form-input-narrow"
+                  type="number" min="0" value="${muc.lowStockThreshold}" aria-label="Ngưỡng cảnh báo" />
+              </td>
+              <td id="trang-thai-${chuoiAnToan(sanPhamId)}">
+                ${taoHtmlChipTrangThai(muc.quantity, muc.lowStockThreshold)}
+              </td>
+              <td class="cell-actions">
+                <button type="button" class="btn btn-primary btn-sm" data-luu="${chuoiAnToan(sanPhamId)}">
+                  <i data-lucide="save"></i> Lưu
+                </button>
+              </td>
+            </tr>`;
+        })
+        .join('');
+
+      ganSuKienBang();
+      veIcon();
+    }
+
+    /** Hiện / ẩn nút xóa từ khóa */
+    function capNhatNutXoaTim() {
+      document.getElementById('nut-xoa-tim').hidden = oTimKiem.value.trim() === '';
+    }
+
+    /** Áp dụng từ khóa đang nhập rồi vẽ lại bảng */
+    function apDungTimKiem() {
+      const tuKhoa = oTimKiem.value.trim();
+      if (tuKhoa.length > 100) {
+        thongBao.loi('Từ khóa tìm kiếm không được quá 100 ký tự');
+        return;
+      }
+      tuKhoaTimKiem = tuKhoa;
+      capNhatNutXoaTim();
+      veBangTonKho();
+    }
+
+    /** Gắn sự kiện ô tìm kiếm: gõ (có chờ một chút), Enter, nút Tìm / Xóa */
+    function ganSuKienTimKiem() {
+      oTimKiem.addEventListener('input', () => {
+        capNhatNutXoaTim();
+        window.clearTimeout(henGioTimKiem);
+        henGioTimKiem = window.setTimeout(apDungTimKiem, 400);
+      });
+      oTimKiem.addEventListener('keydown', (suKien) => {
+        if (suKien.key !== 'Enter') return;
+        suKien.preventDefault();
+        window.clearTimeout(henGioTimKiem);
+        apDungTimKiem();
+      });
+      document.getElementById('nut-tim').addEventListener('click', () => {
+        window.clearTimeout(henGioTimKiem);
+        apDungTimKiem();
+      });
+      document.getElementById('nut-xoa-tim').addEventListener('click', () => {
+        oTimKiem.value = '';
+        window.clearTimeout(henGioTimKiem);
+        apDungTimKiem();
+      });
+    }
+
+    /** Gắn sự kiện cho ô nhập (đổi chip trạng thái) và nút Lưu của từng dòng */
+    function ganSuKienBang() {
+      locTonKho().forEach((muc) => {
+        const sanPhamId = muc.product.id;
+        const oSoLuong = document.getElementById(`so-luong-${sanPhamId}`);
+        const oNguong = document.getElementById(`nguong-${sanPhamId}`);
+        if (!oSoLuong || !oNguong) return;
+
+        // Người dùng đổi số → cập nhật ngay chip trạng thái để thấy trước kết quả
+        const capNhatChip = () => {
+          document.getElementById(`trang-thai-${sanPhamId}`).innerHTML = taoHtmlChipTrangThai(
+            Number(oSoLuong.value),
+            Number(oNguong.value),
+          );
+          veIcon();
+        };
+        oSoLuong.addEventListener('input', capNhatChip);
+        oNguong.addEventListener('input', capNhatChip);
+      });
+
+      bangEl.querySelectorAll('[data-luu]').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          const sanPhamId = nut.dataset.luu;
+          xuLyLuuTonKho(
+            sanPhamId,
+            Number(document.getElementById(`so-luong-${sanPhamId}`).value),
+            Number(document.getElementById(`nguong-${sanPhamId}`).value),
+          );
+        }),
+      );
+    }
+
+    /** Kiểm tra số liệu rồi gọi API cập nhật tồn kho của 1 sản phẩm */
+    async function xuLyLuuTonKho(sanPhamId, soLuong, nguong) {
+      // Validate: cả 2 phải là số nguyên không âm
+      const ketQua = kiemTraCacTruong([
+        { id: 'so-luong', label: 'Số lượng', value: soLuong, rules: ['required', 'integer', 'min:0'] },
+        { id: 'nguong', label: 'Ngưỡng cảnh báo', value: nguong, rules: ['required', 'integer', 'min:0'] },
+      ]);
+      if (!ketQua.ok) {
+        thongBao.loi(ketQua.errors[0].message);
+        return;
+      }
+
+      try {
+        await api.patch(`/inventory/${sanPhamId}`, { quantity: soLuong, lowStockThreshold: nguong });
+        thongBao.thanhCong('Đã cập nhật tồn kho');
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không cập nhật được tồn kho');
+      }
+    }
+
+    /** Gọi API lấy bảng tồn kho rồi vẽ lại */
+    async function taiDanhSach() {
+      danhSachTonKho = (await api.get('/inventory')) || [];
+      veBangTonKho();
+    }
+
+    /** Khởi động trang kho hàng */
+    async function khoiDong() {
+      if (!batBuocAdmin()) return;
+      dungKhungAdmin('inventory');
+      ganSuKienTimKiem();
+
+      try {
+        await taiDanhSach();
+      } catch {
+        bangEl.innerHTML = '<tr><td colspan="6" class="cell-empty">Không tải được dữ liệu kho</td></tr>';
+      }
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

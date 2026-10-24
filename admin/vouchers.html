@@ -5,23 +5,387 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản lý voucher - Admin</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+
+  <!-- CSS RIÊNG của trang quản lý voucher -->
+  <style>
+    .voucher-form {
+      padding: 1.25rem;
+    }
+    /* Ô checkbox "Đang hoạt động" căn xuống đáy cho thẳng hàng với các ô nhập */
+    .voucher-form-checkbox {
+      display: flex;
+      align-items: flex-end;
+    }
+    /* Mã voucher in màu chủ đạo cho dễ nhận */
+    .voucher-code-cell {
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .voucher-discount-value {
+      font-weight: 600;
+    }
+    .voucher-date-cell {
+      font-size: 0.75rem;
+    }
+    /* Nút bật/tắt: sáng màu xanh khi voucher đang bật */
+    .voucher-toggle-on .lucide {
+      color: var(--success);
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <div style="display:flex;min-height:100vh;background:var(--surface)">
-    <aside
-      id="admin-aside"
-      style="
-        position:fixed;left:0;top:0;height:100vh;width:16rem;
-        background:var(--surface-lowest);border-right:1px solid var(--outline-variant);
-        display:flex;flex-direction:column;padding:1.5rem 1rem;z-index:40;box-sizing:border-box
-      "
-    ></aside>
-    <main
-      id="app"
-      style="margin-left:16rem;flex:1;padding:2rem;max-width:80rem;width:100%;box-sizing:border-box;min-width:0"
-    ></main>
+  <div class="admin-shell">
+    <aside class="admin-aside" id="admin-aside"></aside>
+
+    <main class="admin-content">
+      <div class="admin-page">
+        <!-- Tiêu đề trang -->
+        <div>
+          <div class="admin-kicker">
+            <span class="ms material-symbols-outlined">confirmation_number</span>
+            <span>Khuyến mãi &amp; mã giảm giá</span>
+          </div>
+          <h1 class="page-title" style="margin-top:.25rem">Voucher &amp; Khuyến mãi</h1>
+          <div class="page-subtitle">
+            <i data-lucide="ticket"></i>
+            <p>Tạo và quản lý mã giảm giá cho khách hàng.</p>
+          </div>
+        </div>
+
+        <!-- Form tạo mới / cập nhật voucher -->
+        <form id="form-voucher" class="card admin-form admin-form-narrow voucher-form">
+          <div class="form-field">
+            <label class="form-label" for="code">Mã voucher *</label>
+            <input id="code" class="form-input form-input-uppercase" placeholder="SALE10" required />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="discountType">Loại giảm *</label>
+            <select id="discountType" class="form-input">
+              <option value="PERCENT">Phần trăm (%)</option>
+              <option value="FIXED">Số tiền cố định</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="discountValue">Giá trị giảm *</label>
+            <input id="discountValue" class="form-input" type="number" min="0.01" step="0.01" required />
+          </div>
+
+          <!-- Trần giảm: chỉ dùng khi loại giảm là phần trăm -->
+          <div class="form-field" id="khoi-tran-giam">
+            <label class="form-label" for="maxDiscount">Trần giảm tối đa</label>
+            <input id="maxDiscount" class="form-input" type="number" min="0" placeholder="Không giới hạn" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="minOrderAmount">Đơn tối thiểu</label>
+            <input id="minOrderAmount" class="form-input" type="number" min="0" value="0" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="usageLimit">Giới hạn lượt *</label>
+            <input id="usageLimit" class="form-input" type="number" min="1" value="100" required />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="startDate">Bắt đầu *</label>
+            <input id="startDate" class="form-input" type="datetime-local" required />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="endDate">Kết thúc *</label>
+            <input id="endDate" class="form-input" type="datetime-local" required />
+          </div>
+
+          <div class="voucher-form-checkbox">
+            <label class="form-checkbox-label" for="isActive">
+              <input id="isActive" type="checkbox" checked />
+              Đang hoạt động
+            </label>
+          </div>
+
+          <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="plus"></i> <span id="nhan-nut-luu">Thêm voucher</span>
+            </button>
+            <button type="button" id="nut-huy-sua" class="btn btn-outline" hidden>Hủy</button>
+          </div>
+        </form>
+
+        <!-- Bảng danh sách voucher -->
+        <div class="card card-flush">
+          <div class="list-header">Danh sách voucher (<span id="so-voucher">0</span>)</div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="data-table-head">
+                <tr>
+                  <th>Mã</th>
+                  <th>Giảm giá</th>
+                  <th>Đơn tối thiểu</th>
+                  <th>Lượt dùng</th>
+                  <th>Hiệu lực</th>
+                  <th>Trạng thái</th>
+                  <th class="cell-actions">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="danh-sach-voucher">
+                <tr><td colspan="7" class="cell-empty">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-  <script type="module" src="../js/pages/admin/vouchers.js"></script>
+
+  <script type="module">
+    import { api } from '../js/api.js';
+    import { dinhDangTien, dinhDangNgay, chuoiAnToan } from '../js/format.js';
+    import { thongBao } from '../js/toast.js';
+    import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
+    import { tuDongXoaLoi, kiemTraForm } from '../js/validate.js';
+
+    const form = document.getElementById('form-voucher');
+    const bangEl = document.getElementById('danh-sach-voucher');
+
+    // Nhãn tiếng Việt cho enum loại giảm giá của backend
+    const NHAN_LOAI_GIAM = { PERCENT: 'Phần trăm (%)', FIXED: 'Số tiền cố định' };
+
+    let danhSachVoucher = [];
+    let voucherDangSuaId = null; // null = đang thêm mới
+
+    /** Đổi Date thành chuỗi cho ô <input type="datetime-local"> */
+    function chuoiNgayGio(ngay) {
+      return new Date(ngay).toISOString().slice(0, 16);
+    }
+
+    /** Mô tả mức giảm: "10%, tối đa 50.000 ₫" hoặc "50.000 ₫" */
+    function moTaMucGiam(voucher) {
+      if (voucher.discountType === 'PERCENT') {
+        const tranGiam = voucher.maxDiscount ? `, tối đa ${dinhDangTien(voucher.maxDiscount)}` : '';
+        return `${Number(voucher.discountValue)}%${tranGiam}`;
+      }
+      return dinhDangTien(voucher.discountValue);
+    }
+
+    /** Ẩn/hiện ô "Trần giảm tối đa" — chỉ dùng khi giảm theo phần trăm */
+    function capNhatOTranGiam() {
+      const laPhanTram = document.getElementById('discountType').value === 'PERCENT';
+      document.getElementById('khoi-tran-giam').hidden = !laPhanTram;
+    }
+
+    /** Tạo HTML cho 1 dòng voucher */
+    function taoHtmlDongVoucher(voucher) {
+      return `
+        <tr>
+          <td class="mono voucher-code-cell">${chuoiAnToan(voucher.code)}</td>
+          <td>
+            <div>${NHAN_LOAI_GIAM[voucher.discountType] || voucher.discountType}</div>
+            <div class="voucher-discount-value">${chuoiAnToan(moTaMucGiam(voucher))}</div>
+          </td>
+          <td>${dinhDangTien(voucher.minOrderAmount)}</td>
+          <td>${voucher.usedCount} / ${voucher.usageLimit}</td>
+          <td class="muted voucher-date-cell">
+            <div>${dinhDangNgay(voucher.startDate)}</div>
+            <div>→ ${dinhDangNgay(voucher.endDate)}</div>
+          </td>
+          <td>
+            <span class="chip ${voucher.isActive ? 'chip-success' : 'chip-neutral'}">
+              ${voucher.isActive ? 'Bật' : 'Tắt'}
+            </span>
+          </td>
+          <td class="cell-actions">
+            <button type="button" class="icon-btn ${voucher.isActive ? 'voucher-toggle-on' : ''}"
+              data-bat-tat="${chuoiAnToan(voucher.id)}" title="${voucher.isActive ? 'Tắt' : 'Bật'}">
+              <i data-lucide="${voucher.isActive ? 'toggle-right' : 'toggle-left'}"></i>
+            </button>
+            <button type="button" class="icon-btn icon-btn-edit" data-sua="${chuoiAnToan(voucher.id)}" title="Sửa">
+              <i data-lucide="pen"></i>
+            </button>
+           
+          </td>
+        </tr>`;
+    }
+
+    /** Vẽ lại bảng voucher và gắn sự kiện cho các nút trên từng dòng */
+    function veBangVoucher() {
+      document.getElementById('so-voucher').textContent = danhSachVoucher.length;
+
+      bangEl.innerHTML =
+        danhSachVoucher.length === 0
+          ? '<tr><td colspan="7" class="cell-empty">Chưa có voucher nào</td></tr>'
+          : danhSachVoucher.map(taoHtmlDongVoucher).join('');
+
+      bangEl.querySelectorAll('[data-bat-tat]').forEach((nut) =>
+        nut.addEventListener('click', () => xuLyBatTat(nut.dataset.batTat)),
+      );
+      bangEl.querySelectorAll('[data-sua]').forEach((nut) =>
+        nut.addEventListener('click', () => batDauSua(nut.dataset.sua)),
+      );
+      bangEl.querySelectorAll('[data-xoa]').forEach((nut) =>
+        nut.addEventListener('click', () => xuLyXoa(nut.dataset.xoa)),
+      );
+      veIcon();
+    }
+
+    /** Đưa form về trạng thái thêm mới (thời gian mặc định: hôm nay → 1 tháng sau) */
+    function datLaiForm() {
+      voucherDangSuaId = null;
+      form.reset();
+
+      const batDau = new Date();
+      const ketThuc = new Date();
+      ketThuc.setMonth(ketThuc.getMonth() + 1);
+
+      document.getElementById('discountType').value = 'PERCENT';
+      document.getElementById('discountValue').value = 10;
+      document.getElementById('minOrderAmount').value = 0;
+      document.getElementById('usageLimit').value = 100;
+      document.getElementById('startDate').value = chuoiNgayGio(batDau);
+      document.getElementById('endDate').value = chuoiNgayGio(ketThuc);
+      document.getElementById('isActive').checked = true;
+
+      document.getElementById('nhan-nut-luu').textContent = 'Thêm voucher';
+      document.getElementById('nut-huy-sua').hidden = true;
+      capNhatOTranGiam();
+    }
+
+    /** Điền dữ liệu 1 voucher lên form để sửa */
+    function batDauSua(id) {
+      const voucher = danhSachVoucher.find((x) => x.id === id);
+      if (!voucher) return;
+
+      voucherDangSuaId = id;
+      document.getElementById('code').value = voucher.code;
+      document.getElementById('discountType').value = voucher.discountType;
+      document.getElementById('discountValue').value = Number(voucher.discountValue);
+      document.getElementById('maxDiscount').value = voucher.maxDiscount != null ? Number(voucher.maxDiscount) : '';
+      document.getElementById('minOrderAmount').value = Number(voucher.minOrderAmount);
+      document.getElementById('usageLimit').value = voucher.usageLimit;
+      document.getElementById('startDate').value = chuoiNgayGio(voucher.startDate);
+      document.getElementById('endDate').value = chuoiNgayGio(voucher.endDate);
+      document.getElementById('isActive').checked = voucher.isActive;
+
+      document.getElementById('nhan-nut-luu').textContent = 'Cập nhật';
+      document.getElementById('nut-huy-sua').hidden = false;
+      capNhatOTranGiam();
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /** Đọc form thành object gửi cho backend */
+    function docForm() {
+      const layGiaTri = (id) => document.getElementById(id).value;
+      const tranGiam = layGiaTri('maxDiscount');
+
+      return {
+        code: layGiaTri('code').trim().toUpperCase(),
+        discountType: layGiaTri('discountType'),
+        discountValue: Number(layGiaTri('discountValue')),
+        maxDiscount: tranGiam === '' ? undefined : Number(tranGiam),
+        minOrderAmount: Number(layGiaTri('minOrderAmount')) || 0,
+        usageLimit: Number(layGiaTri('usageLimit')),
+        startDate: new Date(layGiaTri('startDate')).toISOString(),
+        endDate: new Date(layGiaTri('endDate')).toISOString(),
+        isActive: document.getElementById('isActive').checked,
+      };
+    }
+
+    /** Kiểm tra form rồi gọi API tạo mới hoặc cập nhật voucher */
+    async function xuLyLuuVoucher(suKien) {
+      suKien.preventDefault();
+
+      // Giá trị giảm: theo % thì 1–100, theo số tiền thì ≥ 1
+      const loaiGiam = document.getElementById('discountType').value;
+      const cacTruong = [
+        { id: 'code', label: 'Mã voucher', rules: ['required', 'voucherCode'] },
+        {
+          id: 'discountValue',
+          label: 'Giá trị giảm',
+          rules: ['required', 'number', loaiGiam === 'PERCENT' ? 'percent' : 'min:1'],
+        },
+        { id: 'minOrderAmount', label: 'Đơn tối thiểu', rules: ['number', 'min:0'] },
+        { id: 'usageLimit', label: 'Giới hạn lượt', rules: ['required', 'integer', 'min:1'] },
+        { id: 'startDate', label: 'Ngày bắt đầu', rules: ['required'] },
+        { id: 'endDate', label: 'Ngày kết thúc', rules: ['required', 'dateAfter:startDate'] },
+      ];
+      if (loaiGiam === 'PERCENT') {
+        cacTruong.push({ id: 'maxDiscount', label: 'Trần giảm tối đa', rules: ['number', 'min:0'] });
+      }
+
+      const ketQua = kiemTraForm(cacTruong, form, thongBao);
+      if (!ketQua) return;
+
+      try {
+        if (voucherDangSuaId) {
+          await api.patch(`/vouchers/${voucherDangSuaId}`, docForm());
+          thongBao.thanhCong('Đã cập nhật voucher');
+        } else {
+          await api.post('/vouchers', docForm());
+          thongBao.thanhCong('Đã tạo voucher');
+        }
+        datLaiForm();
+        await taiDanhSach();
+      } catch (loi) {
+        const noiDung = loi?.response?.data?.message;
+        thongBao.loi(Array.isArray(noiDung) ? noiDung[0] : noiDung || 'Không lưu được voucher');
+      }
+    }
+
+    /** Bật / tắt nhanh 1 voucher */
+    async function xuLyBatTat(id) {
+      try {
+        await api.patch(`/vouchers/${id}/toggle`);
+        thongBao.thanhCong('Đã cập nhật trạng thái');
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không đổi được trạng thái');
+      }
+    }
+
+    /** Xác nhận rồi gọi API xóa voucher */
+    async function xuLyXoa(id) {
+      if (!confirm('Xóa voucher này?')) return;
+      try {
+        await api.delete(`/vouchers/${id}`);
+        thongBao.thanhCong('Đã xóa voucher');
+        if (voucherDangSuaId === id) datLaiForm();
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không xóa được voucher');
+      }
+    }
+
+    /** Gọi API lấy danh sách voucher rồi vẽ lại bảng */
+    async function taiDanhSach() {
+      danhSachVoucher = (await api.get('/vouchers')) || [];
+      veBangVoucher();
+    }
+
+    /** Khởi động trang quản lý voucher */
+    async function khoiDong() {
+      if (!batBuocAdmin()) return;
+      dungKhungAdmin('vouchers');
+
+      tuDongXoaLoi(form);
+      form.addEventListener('submit', xuLyLuuVoucher);
+      document.getElementById('discountType').addEventListener('change', capNhatOTranGiam);
+      document.getElementById('nut-huy-sua').addEventListener('click', datLaiForm);
+      datLaiForm();
+
+      try {
+        await taiDanhSach();
+      } catch {
+        bangEl.innerHTML = '<tr><td colspan="7" class="cell-empty">Không tải được danh sách voucher</td></tr>';
+      }
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

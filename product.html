@@ -3,16 +3,949 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chi tiết sản phẩm - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Chi tiết sản phẩm - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang chi tiết sản phẩm -->
+  <style>
+    .product-page {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Hai cột: ảnh bên trái, thông tin mua hàng bên phải */
+    .product-layout {
+      display: grid;
+      gap: 1.5rem;
+    }
+    @media (min-width: 1024px) {
+      .product-layout {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* ===== Cột ảnh ===== */
+    .product-gallery {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .product-main-image {
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      background: var(--surface-low);
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .product-main-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .product-main-image .lucide {
+      width: 4rem;
+      height: 4rem;
+      color: var(--on-surface-variant);
+    }
+    /* Dải ảnh nhỏ, cuộn ngang khi nhiều ảnh */
+    .product-thumbs {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+    }
+    .product-thumb-button {
+      width: 5rem;
+      height: 5rem;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 2px solid transparent;
+      flex-shrink: 0;
+    }
+    .product-thumb-button.active {
+      border-color: var(--primary);
+    }
+    .product-thumb-button img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ===== Cột thông tin ===== */
+    .product-name {
+      font-size: 1.875rem;
+      font-weight: 800;
+      margin-top: 0.75rem;
+    }
+    .product-sku {
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    .product-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+    .product-stars {
+      display: inline-flex;
+      gap: 0.125rem;
+    }
+    .product-rating-value {
+      font-weight: 600;
+    }
+
+    /* Hàng giá: giá bán lớn, giá cũ gạch ngang, chip % giảm */
+    .product-price-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .product-price {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .product-old-price {
+      color: var(--on-surface-variant);
+      text-decoration: line-through;
+    }
+
+    .product-stock-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+
+    /* Mô tả: giữ nguyên dấu xuống dòng người bán đã nhập */
+    .product-description {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: var(--radius-lg);
+      background: var(--surface-low);
+      font-size: 0.875rem;
+      white-space: pre-line;
+    }
+
+    /* Hàng chọn số lượng + nút thêm vào giỏ */
+    .product-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .product-add-button {
+      flex: 1;
+    }
+
+    /* ===== Khu vực đánh giá ===== */
+    .review-form {
+      border-radius: var(--radius-lg);
+      background: var(--surface-low);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .review-form-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .review-form-stars {
+      display: inline-flex;
+      gap: 0.25rem;
+    }
+    .review-form-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .review-form-note {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+    }
+
+    .review-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .review-item {
+      padding: 1rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--outline-soft);
+    }
+    .review-item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .review-item-author {
+      flex: 1;
+    }
+    .review-item-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    .review-item-date {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+    }
+    .review-item-comment {
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+    .review-item-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .review-expired-note {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+      margin-bottom: 1rem;
+    }
+
+    /* ===== Gợi ý sản phẩm ===== */
+    .rec-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .rec-section[hidden] { display: none; }
+    .rec-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .rec-kicker {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+    }
+    .rec-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+    .rec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .rec-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .rec-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .rec-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
+      border: 1px solid var(--outline-soft);
+      transition: box-shadow 0.25s, transform 0.25s;
+    }
+    .rec-card:hover {
+      box-shadow: var(--shadow-elevated);
+      transform: translateY(-2px);
+    }
+    .rec-card-link { display: block; flex: 1; }
+    .rec-thumb {
+      aspect-ratio: 1 / 1;
+      background: var(--surface-low);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .rec-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .rec-thumb .lucide {
+      width: 2.5rem;
+      height: 2.5rem;
+      color: var(--on-surface-variant);
+    }
+    .rec-card-body { padding: 0.75rem 0.75rem 0; }
+    .rec-card-cat {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+    }
+    .rec-card-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-top: 0.2rem;
+      min-height: 2.4em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .rec-card-prices {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .rec-card-price {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.95rem;
+    }
+    .rec-card-old {
+      font-size: 0.7rem;
+      color: var(--on-surface-variant);
+      text-decoration: line-through;
+    }
+    .rec-card-actions { padding: 0.65rem 0.75rem 0.75rem; }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <p class="loading-block" id="khoi-dang-tai">Đang tải...</p>
+
+      <!-- Thông báo khi không tải được sản phẩm -->
+      <div class="card empty-block" id="khoi-loi" hidden></div>
+
+      <div class="product-page" id="khoi-san-pham" hidden>
+        <a href="index.html" class="back-link"><i data-lucide="arrow-left"></i> Quay lại danh sách</a>
+
+        <div class="product-layout">
+          <!-- Cột ảnh -->
+          <div class="product-gallery">
+            <div class="card product-main-image" id="anh-chinh"></div>
+            <div class="product-thumbs" id="danh-sach-anh-nho"></div>
+          </div>
+
+          <!-- Cột thông tin mua hàng -->
+          <div class="product-info">
+            <div id="khoi-danh-muc"></div>
+            <h1 class="product-name" id="ten-san-pham"></h1>
+            <div class="product-sku muted" id="ma-sku"></div>
+
+            <div class="product-rating">
+              <span class="product-stars" id="sao-trung-binh"></span>
+              <span class="product-rating-value" id="diem-trung-binh"></span>
+              <span class="muted" id="so-luong-danh-gia"></span>
+            </div>
+
+            <div class="product-price-row" id="khoi-gia"></div>
+
+            <div class="product-stock-row">
+              <span class="muted">Tồn kho:</span>
+              <span id="khoi-ton-kho"></span>
+            </div>
+
+            <div class="product-description" id="mo-ta" hidden></div>
+
+            <div class="product-actions">
+              <div class="qty-box">
+                <button type="button" id="nut-giam" aria-label="Giảm số lượng">−</button>
+                <input id="so-luong" type="number" min="1" value="1" aria-label="Số lượng" />
+                <button type="button" id="nut-tang" aria-label="Tăng số lượng">+</button>
+              </div>
+              <button type="button" id="nut-them-gio" class="btn btn-primary btn-lg product-add-button">
+                <i data-lucide="shopping-cart"></i> <span id="nhan-nut-them-gio">Thêm vào giỏ hàng</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Khu vực đánh giá -->
+        <section class="card" id="khoi-danh-gia">
+          <h2 class="block-title">
+            <i data-lucide="message-square"></i> Đánh giá (<span id="tong-danh-gia">0</span>)
+          </h2>
+          <!-- Form gửi / sửa đánh giá (chỉ hiện khi đã đăng nhập) -->
+          <div id="khung-form-danh-gia"></div>
+          <!-- Danh sách đánh giá của mọi khách hàng -->
+          <div class="review-list" id="danh-sach-danh-gia"></div>
+        </section>
+
+        <!-- Gợi ý: thường mua kèm -->
+        <section class="rec-section" id="khoi-mua-kem" hidden>
+          <div class="rec-head">
+            <div>
+              <span class="rec-kicker">Gợi ý mua hàng</span>
+              <h2 class="rec-title">Thường mua kèm</h2>
+            </div>
+          </div>
+          <div class="rec-grid" id="luoi-mua-kem"></div>
+        </section>
+
+        <!-- Gợi ý: sản phẩm liên quan -->
+        <section class="rec-section" id="khoi-lien-quan" hidden>
+          <div class="rec-head">
+            <div>
+              <span class="rec-kicker">Cùng danh mục</span>
+              <h2 class="rec-title">Sản phẩm liên quan</h2>
+            </div>
+          </div>
+          <div class="rec-grid" id="luoi-lien-quan"></div>
+        </section>
+      </div>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/product.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { duongDanTapTin, duongDanTrang } from './js/config.js';
+    import { dinhDangTien, dinhDangNgay, chuoiAnToan } from './js/format.js';
+    import { gioHang } from './js/cart.js';
+    import { taiKhoan } from './js/auth.js';
+    import { thongBao } from './js/toast.js';
+    import { dungKhungKhachHang, veIcon } from './js/layout.js';
+    import { kiemTraCacTruong } from './js/validate.js';
+
+    // Cho sửa đánh giá trong vòng 7 ngày kể từ lúc gửi
+    const HAN_SUA_DANH_GIA = 7 * 24 * 60 * 60 * 1000;
+
+    const sanPhamId = new URLSearchParams(location.search).get('id');
+
+    // Trạng thái trang
+    let sanPham = null;
+    let viTriAnhDangXem = 0;
+    let soLuongMua = 1;
+    let soSaoDangChon = 5;
+    let danhGiaDangSuaId = null;
+
+    /** So sánh 2 id không phân biệt chữ hoa/thường */
+    const cungId = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase();
+
+    /** Đánh giá còn trong hạn 7 ngày để sửa hay không */
+    const conHanSua = (danhGia) => {
+      if (!danhGia?.createdAt) return false;
+      return Date.now() - new Date(danhGia.createdAt).getTime() <= HAN_SUA_DANH_GIA;
+    };
+
+    /** Đánh giá của chính người đang đăng nhập (nếu có) */
+    function danhGiaCuaToi() {
+      const nguoiDung = taiKhoan.layNguoiDung();
+      if (!nguoiDung) return null;
+      return (sanPham?.reviews || []).find((danhGia) => cungId(danhGia.user?.id, nguoiDung.id)) || null;
+    }
+
+    // -------------------------------------------------------------- Ngôi sao
+
+    /** 5 ngôi sao chỉ để xem (không bấm được) */
+    function taoHtmlSaoTinh(soSao, kichCo = '') {
+      return [1, 2, 3, 4, 5]
+        .map(
+          (n) =>
+            `<i data-lucide="star" class="star ${kichCo} ${soSao >= n ? 'star-filled' : ''}"></i>`,
+        )
+        .join('');
+    }
+
+    /** 5 ngôi sao bấm được để chọn điểm khi viết đánh giá */
+    function taoHtmlSaoChon(soSao) {
+      return [1, 2, 3, 4, 5]
+        .map(
+          (n) => `
+            <button type="button" class="star-btn" data-chon-sao="${n}" aria-label="${n} sao" title="${n} sao">
+              <i data-lucide="star" class="star star-large ${soSao >= n ? 'star-filled' : ''}"></i>
+            </button>`,
+        )
+        .join('');
+    }
+
+    // ------------------------------------------------------- Vẽ thông tin SP
+
+    /** Vẽ ảnh chính + dải ảnh nhỏ */
+    function veKhoiAnh() {
+      const anhChinh = document.getElementById('anh-chinh');
+      const danhSachAnhNho = document.getElementById('danh-sach-anh-nho');
+      const cacAnh = sanPham.images || [];
+
+      anhChinh.innerHTML = cacAnh[viTriAnhDangXem]
+        ? `<img src="${duongDanTapTin(cacAnh[viTriAnhDangXem])}" alt="${chuoiAnToan(sanPham.name)}" />`
+        : '<i data-lucide="box"></i>';
+
+      // Chỉ hiện dải ảnh nhỏ khi có từ 2 ảnh trở lên
+      danhSachAnhNho.innerHTML =
+        cacAnh.length > 1
+          ? cacAnh
+              .map(
+                (anh, viTri) => `
+                  <button type="button" class="product-thumb-button ${viTri === viTriAnhDangXem ? 'active' : ''}"
+                    data-chon-anh="${viTri}" aria-label="Ảnh ${viTri + 1}">
+                    <img src="${duongDanTapTin(anh)}" alt="" />
+                  </button>`,
+              )
+              .join('')
+          : '';
+
+      danhSachAnhNho.querySelectorAll('[data-chon-anh]').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          viTriAnhDangXem = Number(nut.dataset.chonAnh);
+          veKhoiAnh();
+          veIcon();
+        }),
+      );
+    }
+
+    /** Vẽ tên, giá, tồn kho, mô tả và điểm đánh giá trung bình */
+    function veThongTinSanPham() {
+      const tonKho = sanPham.inventory?.quantity ?? 0;
+      const coGiamGia = Number(sanPham.discountPrice) > 0;
+      const gia = coGiamGia ? Number(sanPham.discountPrice) : Number(sanPham.price);
+      const phanTramGiam = coGiamGia
+        ? Math.round((1 - Number(sanPham.discountPrice) / Number(sanPham.price)) * 100)
+        : 0;
+
+      const cacDanhGia = sanPham.reviews || [];
+      const diemTrungBinh = cacDanhGia.length
+        ? (cacDanhGia.reduce((tong, danhGia) => tong + danhGia.rating, 0) / cacDanhGia.length).toFixed(1)
+        : '0';
+
+      document.getElementById('khoi-danh-muc').innerHTML = sanPham.category
+        ? `<span class="chip chip-info"><i data-lucide="tag"></i> ${chuoiAnToan(sanPham.category.name)}</span>`
+        : '';
+      document.getElementById('ten-san-pham').textContent = sanPham.name || '';
+      document.getElementById('ma-sku').textContent = `SKU: ${sanPham.sku || ''}`;
+
+      document.getElementById('sao-trung-binh').innerHTML = taoHtmlSaoTinh(Number(diemTrungBinh));
+      document.getElementById('diem-trung-binh').textContent = diemTrungBinh;
+      document.getElementById('so-luong-danh-gia').textContent = `(${cacDanhGia.length} đánh giá)`;
+
+      document.getElementById('khoi-gia').innerHTML = `
+        <span class="product-price">${dinhDangTien(gia)}</span>
+        ${coGiamGia ? `<span class="product-old-price">${dinhDangTien(sanPham.price)}</span>` : ''}
+        ${coGiamGia ? `<span class="chip chip-tertiary">-${phanTramGiam}%</span>` : ''}`;
+
+      document.getElementById('khoi-ton-kho').innerHTML =
+        tonKho > 0
+          ? `<span class="chip chip-success">Còn ${tonKho} sản phẩm</span>`
+          : '<span class="chip chip-danger">Hết hàng</span>';
+
+      const moTa = document.getElementById('mo-ta');
+      moTa.hidden = !sanPham.description;
+      moTa.textContent = sanPham.description || '';
+
+      // Hết hàng thì khóa nút thêm vào giỏ
+      const nutThemGio = document.getElementById('nut-them-gio');
+      nutThemGio.disabled = tonKho <= 0;
+      document.getElementById('nhan-nut-them-gio').textContent = tonKho > 0 ? 'Thêm vào giỏ hàng' : 'Hết hàng';
+
+      const oSoLuong = document.getElementById('so-luong');
+      oSoLuong.max = tonKho;
+      soLuongMua = Math.min(Math.max(1, soLuongMua), Math.max(1, tonKho));
+      oSoLuong.value = soLuongMua;
+    }
+
+    // ---------------------------------------------------------- Đánh giá
+
+    /** Vẽ form gửi / sửa đánh giá tùy theo trạng thái người dùng */
+    function veFormDanhGia() {
+      const khung = document.getElementById('khung-form-danh-gia');
+      const nguoiDung = taiKhoan.layNguoiDung();
+      const cuaToi = danhGiaCuaToi();
+
+      // Chưa đăng nhập → không hiện form
+      if (!nguoiDung) {
+        khung.innerHTML = '';
+        return;
+      }
+
+      const dangSua = Boolean(danhGiaDangSuaId && cuaToi && cungId(danhGiaDangSuaId, cuaToi.id) && conHanSua(cuaToi));
+
+      // Đã đánh giá rồi: còn hạn thì bấm "Sửa" ở danh sách bên dưới,
+      // hết hạn 7 ngày thì chỉ hiện lời nhắc.
+      if (cuaToi && !dangSua) {
+        khung.innerHTML = conHanSua(cuaToi)
+          ? ''
+          : '<p class="review-expired-note">Bạn đã đánh giá sản phẩm này. Thời hạn chỉnh sửa (7 ngày) đã hết.</p>';
+        return;
+      }
+
+      khung.innerHTML = `
+        <form class="review-form" id="form-danh-gia" accept-charset="UTF-8" lang="vi">
+          <div class="review-form-header">
+            <span>${dangSua ? 'Chỉnh sửa đánh giá:' : 'Đánh giá của bạn:'}</span>
+            <span class="review-form-stars" id="sao-dang-chon">${taoHtmlSaoChon(soSaoDangChon)}</span>
+          </div>
+          <textarea id="noi-dung-danh-gia" class="form-input" name="comment" rows="3" lang="vi"
+            placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."></textarea>
+          <div class="review-form-footer">
+            <p class="review-form-note">
+              ${
+                dangSua
+                  ? '* Chỉ được chỉnh sửa trong vòng 7 ngày kể từ lúc gửi.'
+                  : '* Chỉ đánh giá được khi đã mua sản phẩm này. Có thể sửa trong 7 ngày.'
+              }
+            </p>
+            <div class="form-actions">
+              ${dangSua ? '<button type="button" id="nut-huy-sua" class="btn btn-outline">Hủy</button>' : ''}
+              <button type="submit" id="nut-gui-danh-gia" class="btn btn-primary">
+                <i data-lucide="${dangSua ? 'save' : 'send'}"></i> ${dangSua ? 'Cập nhật' : 'Gửi đánh giá'}
+              </button>
+            </div>
+          </div>
+        </form>`;
+
+      // Gán .value sau khi tạo DOM để không đưa Unicode qua innerHTML (giữ nguyên dấu tiếng Việt)
+      document.getElementById('noi-dung-danh-gia').value = dangSua ? cuaToi.comment || '' : '';
+      ganSuKienFormDanhGia(dangSua);
+    }
+
+    /** Gắn sự kiện chọn sao, hủy sửa và gửi đánh giá */
+    function ganSuKienFormDanhGia(dangSua) {
+      const khungSao = document.getElementById('sao-dang-chon');
+      khungSao.addEventListener('click', (suKien) => {
+        const nut = suKien.target.closest('[data-chon-sao]');
+        if (!nut) return;
+        soSaoDangChon = Number(nut.dataset.chonSao);
+        // Chỉ vẽ lại các ngôi sao để không mất nội dung đang gõ trong textarea
+        khungSao.innerHTML = taoHtmlSaoChon(soSaoDangChon);
+        veIcon();
+      });
+
+      const nutHuy = document.getElementById('nut-huy-sua');
+      if (nutHuy) {
+        nutHuy.addEventListener('click', () => {
+          danhGiaDangSuaId = null;
+          soSaoDangChon = 5;
+          veFormDanhGia();
+          veIcon();
+        });
+      }
+
+      document.getElementById('form-danh-gia').addEventListener('submit', (suKien) => {
+        suKien.preventDefault();
+        xuLyGuiDanhGia(dangSua);
+      });
+    }
+
+    /** Kiểm tra nội dung rồi gọi API tạo mới hoặc cập nhật đánh giá */
+    async function xuLyGuiDanhGia(dangSua) {
+      // Validate: nhận xét từ 5 đến 1000 ký tự
+      const ketQua = kiemTraCacTruong([
+        { id: 'noi-dung-danh-gia', label: 'Nhận xét', rules: ['required', 'minLength:5', 'maxLength:1000'] },
+      ]);
+      if (!ketQua.ok) {
+        thongBao.loi(ketQua.errors[0].message);
+        return;
+      }
+
+      const noiDung = String(ketQua.values['noi-dung-danh-gia']).trim();
+      try {
+        if (dangSua && danhGiaDangSuaId) {
+          await api.patch(`/reviews/${danhGiaDangSuaId}`, { rating: soSaoDangChon, comment: noiDung });
+          thongBao.thanhCong('Đã cập nhật đánh giá');
+          danhGiaDangSuaId = null;
+        } else {
+          await api.post('/reviews', { productId: sanPham.id, rating: soSaoDangChon, comment: noiDung });
+          thongBao.thanhCong('Đã gửi đánh giá');
+        }
+        soSaoDangChon = 5;
+        await taiLaiSanPham();
+      } catch (loi) {
+        thongBao.loi(
+          loi?.response?.data?.message || (dangSua ? 'Không cập nhật được đánh giá' : 'Không gửi được đánh giá'),
+        );
+      }
+    }
+
+    /** Vẽ danh sách đánh giá của sản phẩm */
+    function veDanhSachDanhGia() {
+      const cacDanhGia = sanPham.reviews || [];
+      const nguoiDung = taiKhoan.layNguoiDung();
+      const khung = document.getElementById('danh-sach-danh-gia');
+
+      document.getElementById('tong-danh-gia').textContent = cacDanhGia.length;
+
+      if (cacDanhGia.length === 0) {
+        khung.innerHTML = '<p class="empty-block">Chưa có đánh giá nào.</p>';
+        return;
+      }
+
+      khung.innerHTML = cacDanhGia
+        .map((danhGia) => {
+          const cuaToi = nguoiDung && cungId(danhGia.user?.id, nguoiDung.id);
+          const duocSua = cuaToi && conHanSua(danhGia);
+          return `
+            <article class="review-item">
+              <div class="review-item-header">
+                <div class="avatar">${chuoiAnToan((danhGia.user?.fullName || 'U').charAt(0).toUpperCase())}</div>
+                <div class="review-item-author">
+                  <div class="review-item-name">
+                    ${chuoiAnToan(danhGia.user?.fullName || '')}${cuaToi ? ' <span class="muted">(Bạn)</span>' : ''}
+                  </div>
+                  <div class="review-item-date">${dinhDangNgay(danhGia.createdAt)}</div>
+                </div>
+                <span class="product-stars">${taoHtmlSaoTinh(danhGia.rating, 'star-small')}</span>
+              </div>
+              <p class="review-item-comment">${chuoiAnToan(danhGia.comment)}</p>
+              ${
+                cuaToi
+                  ? `<div class="review-item-actions">
+                       ${
+                         duocSua
+                           ? `<button type="button" data-sua-danh-gia="${chuoiAnToan(danhGia.id)}" class="btn btn-outline btn-sm">
+                                <i data-lucide="pen"></i> Sửa
+                              </button>`
+                           : ''
+                       }
+                       <button type="button" data-xoa-danh-gia="${chuoiAnToan(danhGia.id)}" class="btn btn-outline btn-sm">
+                         <i data-lucide="trash-2"></i> Xóa
+                       </button>
+                     </div>`
+                  : ''
+              }
+            </article>`;
+        })
+        .join('');
+
+      ganSuKienDanhSachDanhGia();
+    }
+
+    /** Gắn sự kiện nút Sửa / Xóa trên từng đánh giá */
+    function ganSuKienDanhSachDanhGia() {
+      document.querySelectorAll('[data-sua-danh-gia]').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          const danhGia = (sanPham.reviews || []).find((x) => cungId(x.id, nut.dataset.suaDanhGia));
+          if (!danhGia || !conHanSua(danhGia)) {
+            thongBao.loi('Đã hết hạn chỉnh sửa (7 ngày)');
+            return;
+          }
+          danhGiaDangSuaId = danhGia.id;
+          soSaoDangChon = Number(danhGia.rating) || 5;
+          veFormDanhGia();
+          veIcon();
+          document.getElementById('khoi-danh-gia').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }),
+      );
+
+      document.querySelectorAll('[data-xoa-danh-gia]').forEach((nut) =>
+        nut.addEventListener('click', async () => {
+          if (!confirm('Xóa đánh giá của bạn?')) return;
+          try {
+            await api.delete(`/reviews/${nut.dataset.xoaDanhGia}`);
+            thongBao.thanhCong('Đã xóa đánh giá');
+            danhGiaDangSuaId = null;
+            soSaoDangChon = 5;
+            await taiLaiSanPham();
+          } catch (loi) {
+            thongBao.loi(loi?.response?.data?.message || 'Không xóa được đánh giá');
+          }
+        }),
+      );
+    }
+
+    // -------------------------------------------------------- Giỏ hàng
+
+    /** Gắn sự kiện cho ô số lượng và nút thêm vào giỏ */
+    function ganSuKienMuaHang() {
+      const oSoLuong = document.getElementById('so-luong');
+
+      document.getElementById('nut-giam').addEventListener('click', () => {
+        soLuongMua = Math.max(1, soLuongMua - 1);
+        oSoLuong.value = soLuongMua;
+      });
+
+      document.getElementById('nut-tang').addEventListener('click', () => {
+        const tonKho = sanPham?.inventory?.quantity ?? 1;
+        soLuongMua = Math.min(tonKho, soLuongMua + 1);
+        oSoLuong.value = soLuongMua;
+      });
+
+      oSoLuong.addEventListener('change', () => {
+        soLuongMua = Number(oSoLuong.value) || 1;
+      });
+
+      document.getElementById('nut-them-gio').addEventListener('click', xuLyThemVaoGio);
+    }
+
+    /** Kiểm tra số lượng so với tồn kho rồi gọi API thêm vào giỏ */
+    async function xuLyThemVaoGio() {
+      if (!taiKhoan.layNguoiDung()) {
+        thongBao.loi('Vui lòng đăng nhập');
+        return;
+      }
+
+      const tonKho = sanPham.inventory?.quantity ?? 0;
+      const ketQua = kiemTraCacTruong([
+        { id: 'so-luong', label: 'Số lượng', value: soLuongMua, rules: ['required', 'integer', 'min:1', `max:${tonKho}`] },
+      ]);
+      if (!ketQua.ok) {
+        thongBao.loi(tonKho <= 0 ? 'Sản phẩm đã hết hàng' : ketQua.errors[0].message);
+        return;
+      }
+
+      try {
+        await gioHang.them(sanPham.id, soLuongMua);
+        thongBao.thanhCong('Đã thêm vào giỏ hàng');
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Lỗi khi thêm giỏ hàng');
+      }
+    }
+
+    // ------------------------------------------------------- Gợi ý
+
+    function taoTheGoiY(sp) {
+      const coGiam = Number(sp.discountPrice) > 0;
+      const gia = coGiam ? Number(sp.discountPrice) : Number(sp.price);
+      const tonKho = sp.inventory?.quantity ?? 0;
+      const hetHang = tonKho <= 0;
+      const anh = sp.images?.[0]
+        ? `<img src="${duongDanTapTin(sp.images[0])}" alt="${chuoiAnToan(sp.name)}" />`
+        : '<i data-lucide="shopping-bag"></i>';
+
+      return `
+        <article class="card rec-card">
+          <a href="${duongDanTrang('product.html', { id: sp.id })}" class="rec-card-link">
+            <div class="rec-thumb">${anh}</div>
+            <div class="rec-card-body">
+              ${sp.category ? `<div class="rec-card-cat">${chuoiAnToan(sp.category.name)}</div>` : ''}
+              <h3 class="rec-card-name">${chuoiAnToan(sp.name)}</h3>
+              <div class="rec-card-prices">
+                <span class="rec-card-price">${dinhDangTien(gia)}</span>
+                ${coGiam ? `<span class="rec-card-old">${dinhDangTien(sp.price)}</span>` : ''}
+              </div>
+            </div>
+          </a>
+          <div class="rec-card-actions">
+            <button type="button" class="btn btn-primary btn-sm btn-block"
+              data-them-goi-y="${chuoiAnToan(sp.id)}" ${hetHang ? 'disabled' : ''}>
+              <i data-lucide="shopping-cart"></i> ${hetHang ? 'Hết hàng' : 'Thêm vào giỏ'}
+            </button>
+          </div>
+        </article>`;
+    }
+
+    function ganSuKienThemGoiY(goc) {
+      goc.querySelectorAll('[data-them-goi-y]').forEach((nut) =>
+        nut.addEventListener('click', async (suKien) => {
+          suKien.preventDefault();
+          if (!taiKhoan.layNguoiDung()) {
+            thongBao.loi('Vui lòng đăng nhập');
+            return;
+          }
+          nut.disabled = true;
+          try {
+            await gioHang.them(nut.dataset.themGoiY, 1);
+            thongBao.thanhCong('Đã thêm vào giỏ hàng');
+          } catch (loi) {
+            thongBao.loi(loi?.response?.data?.message || 'Lỗi khi thêm giỏ hàng');
+          } finally {
+            nut.disabled = false;
+          }
+        }),
+      );
+    }
+
+    function veKhoiGoiY(sectionId, gridId, danhSach) {
+      const section = document.getElementById(sectionId);
+      const grid = document.getElementById(gridId);
+      if (!danhSach?.length) {
+        section.hidden = true;
+        grid.innerHTML = '';
+        return;
+      }
+      section.hidden = false;
+      grid.innerHTML = danhSach.map(taoTheGoiY).join('');
+      ganSuKienThemGoiY(grid);
+    }
+
+    async function taiGoiYSanPham() {
+      try {
+        const duLieu = await api.get(`/recommendations/product/${sanPhamId}`, {
+          params: { limit: 8 },
+        });
+        veKhoiGoiY('khoi-mua-kem', 'luoi-mua-kem', duLieu.frequentlyBoughtTogether || []);
+        veKhoiGoiY('khoi-lien-quan', 'luoi-lien-quan', duLieu.related || []);
+        veIcon();
+      } catch {
+        document.getElementById('khoi-mua-kem').hidden = true;
+        document.getElementById('khoi-lien-quan').hidden = true;
+      }
+    }
+
+    // ------------------------------------------------------- Khởi động
+
+    /** Gọi API lấy chi tiết sản phẩm rồi vẽ lại toàn bộ các khối */
+    async function taiLaiSanPham() {
+      sanPham = await api.get(`/products/${sanPhamId}`);
+      viTriAnhDangXem = 0;
+
+      // Nếu đánh giá đang sửa không còn hợp lệ thì bỏ chế độ sửa
+      const cuaToi = danhGiaCuaToi();
+      if (danhGiaDangSuaId && (!cuaToi || !cungId(cuaToi.id, danhGiaDangSuaId) || !conHanSua(cuaToi))) {
+        danhGiaDangSuaId = null;
+      }
+
+      document.getElementById('khoi-dang-tai').hidden = true;
+      document.getElementById('khoi-san-pham').hidden = false;
+
+      veKhoiAnh();
+      veThongTinSanPham();
+      veFormDanhGia();
+      veDanhSachDanhGia();
+      await taiGoiYSanPham();
+      veIcon();
+
+      // Từ trang chi tiết đơn hàng bấm "Đánh giá" sẽ có #reviews trong URL
+      if (location.hash === '#reviews') {
+        document.getElementById('khoi-danh-gia').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    /** Hiện thông báo lỗi thay cho nội dung trang */
+    function hienLoi(noiDung) {
+      document.getElementById('khoi-dang-tai').hidden = true;
+      document.getElementById('khoi-san-pham').hidden = true;
+      const khoiLoi = document.getElementById('khoi-loi');
+      khoiLoi.hidden = false;
+      khoiLoi.textContent = noiDung;
+    }
+
+    /** Khởi động trang chi tiết sản phẩm */
+    async function khoiDong() {
+      dungKhungKhachHang('home');
+
+      if (!sanPhamId) {
+        hienLoi('Không tìm thấy sản phẩm.');
+        return;
+      }
+
+      ganSuKienMuaHang();
+
+      try {
+        await taiLaiSanPham();
+      } catch (loi) {
+        hienLoi(loi?.response?.data?.message || 'Không tải được sản phẩm.');
+      }
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

@@ -1,104 +1,108 @@
 import { API_URL } from './config.js';
-import { auth } from './auth.js';
+import { taiKhoan } from './auth.js';
 
-// Lỗi mô phỏng cấu trúc axios: err.response.data.message
-class ApiError extends Error {
-  constructor(status, data) {
-    super((data && data.message) || 'Request failed');
-    this.response = { status, data };
+// Lỗi API mô phỏng cấu trúc axios để mọi trang đọc được: err.response.data.message
+class LoiApi extends Error {
+  constructor(status, duLieu) {
+    super((duLieu && duLieu.message) || 'Request failed');
+    this.response = { status, data: duLieu };
   }
 }
 
-function buildQuery(params) {
-  if (!params) return '';
+/** Ghép object thành query string ?a=1&b=2 (bỏ giá trị rỗng) */
+function taoQueryString(thamSo) {
+  if (!thamSo) return '';
   const usp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') usp.append(k, v);
+  Object.entries(thamSo).forEach(([khoa, giaTri]) => {
+    if (giaTri !== undefined && giaTri !== null && giaTri !== '') usp.append(khoa, giaTri);
   });
-  const s = usp.toString();
-  return s ? `?${s}` : '';
+  const chuoi = usp.toString();
+  return chuoi ? `?${chuoi}` : '';
 }
 
-let isRefreshing = false;
-let queue = [];
+let dangLamMoiToken = false;
+let hangCho = [];
 
-async function refreshToken() {
-  const rt = auth.getRefreshToken();
-  if (!rt) throw new Error('no refresh token');
+/** Gọi /auth/refresh để lấy access token mới */
+async function lamMoiToken() {
+  const refreshToken = taiKhoan.layRefreshToken();
+  if (!refreshToken) throw new Error('no refresh token');
   const res = await fetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: rt }),
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({ refreshToken }),
   });
   if (!res.ok) throw new Error('refresh failed');
-  const data = await res.json();
-  auth.setTokens(data.accessToken, data.refreshToken);
-  return data.accessToken;
+  const duLieu = await res.json();
+  taiKhoan.luuToken(duLieu.accessToken, duLieu.refreshToken);
+  return duLieu.accessToken;
 }
 
-async function request(method, path, { params, body, isForm } = {}, _retry = false) {
+/** Gửi 1 request đến backend, tự gắn Bearer token và tự refresh khi hết hạn */
+async function guiYeuCau(phuongThuc, duongDan, { params, body, laFormData } = {}, thuLai = false) {
   const headers = {};
-  const token = auth.getAccessToken();
+  const token = taiKhoan.layAccessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  let payload;
-  if (isForm) {
-    payload = body; // FormData: để trình duyệt tự set Content-Type
+  let noiDung;
+  if (laFormData) {
+    noiDung = body; // FormData: để trình duyệt tự set Content-Type
   } else if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-    payload = JSON.stringify(body);
+    headers['Content-Type'] = 'application/json; charset=utf-8';
+    noiDung = JSON.stringify(body);
   }
 
-  const res = await fetch(`${API_URL}${path}${buildQuery(params)}`, {
-    method,
+  const res = await fetch(`${API_URL}${duongDan}${taoQueryString(params)}`, {
+    method: phuongThuc,
     headers,
-    body: payload,
+    body: noiDung,
   });
 
-  if (res.status === 401 && !_retry && auth.getRefreshToken()) {
-    // Refresh 1 lần, các request song song xếp hàng chờ.
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        queue.push((newToken) => {
-          if (!newToken) return reject(new ApiError(401, { message: 'Unauthorized' }));
-          resolve(request(method, path, { params, body, isForm }, true));
+  if (res.status === 401 && !thuLai && taiKhoan.layRefreshToken()) {
+    // Chỉ refresh 1 lần; các request song song xếp hàng chờ token mới.
+    if (dangLamMoiToken) {
+      return new Promise((thanhCong, thatBai) => {
+        hangCho.push((tokenMoi) => {
+          if (!tokenMoi) return thatBai(new LoiApi(401, { message: 'Unauthorized' }));
+          thanhCong(guiYeuCau(phuongThuc, duongDan, { params, body, laFormData }, true));
         });
       });
     }
-    isRefreshing = true;
+    dangLamMoiToken = true;
     try {
-      const newToken = await refreshToken();
-      queue.forEach((cb) => cb(newToken));
-      queue = [];
-      return request(method, path, { params, body, isForm }, true);
-    } catch (e) {
-      queue.forEach((cb) => cb(null));
-      queue = [];
-      auth.logout();
-      throw new ApiError(401, { message: 'Phiên đăng nhập đã hết hạn' });
-    } finally {
-      isRefreshing = false;
-    }
-  }
-
-  let data = null;
-  const text = await res.text();
-  if (text) {
-    try {
-      data = JSON.parse(text);
+      const tokenMoi = await lamMoiToken();
+      hangCho.forEach((tiepTuc) => tiepTuc(tokenMoi));
+      hangCho = [];
+      return guiYeuCau(phuongThuc, duongDan, { params, body, laFormData }, true);
     } catch {
-      data = text;
+      hangCho.forEach((tiepTuc) => tiepTuc(null));
+      hangCho = [];
+      taiKhoan.dangXuat();
+      throw new LoiApi(401, { message: 'Phiên đăng nhập đã hết hạn' });
+    } finally {
+      dangLamMoiToken = false;
     }
   }
 
-  if (!res.ok) throw new ApiError(res.status, data);
-  return data;
+  let duLieu = null;
+  const vanBan = await res.text();
+  if (vanBan) {
+    try {
+      duLieu = JSON.parse(vanBan);
+    } catch {
+      duLieu = vanBan;
+    }
+  }
+
+  if (!res.ok) throw new LoiApi(res.status, duLieu);
+  return duLieu;
 }
 
+// Giữ tên "api" và các phương thức HTTP theo chuẩn (get/post/patch/delete).
 export const api = {
-  get: (path, opts) => request('GET', path, opts),
-  post: (path, body, opts) => request('POST', path, { ...opts, body }),
-  patch: (path, body, opts) => request('PATCH', path, { ...opts, body }),
-  delete: (path, opts) => request('DELETE', path, opts),
-  postForm: (path, formData) => request('POST', path, { body: formData, isForm: true }),
+  get: (duongDan, tuyChon) => guiYeuCau('GET', duongDan, tuyChon),
+  post: (duongDan, body, tuyChon) => guiYeuCau('POST', duongDan, { ...tuyChon, body }),
+  patch: (duongDan, body, tuyChon) => guiYeuCau('PATCH', duongDan, { ...tuyChon, body }),
+  delete: (duongDan, tuyChon) => guiYeuCau('DELETE', duongDan, tuyChon),
+  postForm: (duongDan, formData) => guiYeuCau('POST', duongDan, { body: formData, laFormData: true }),
 };

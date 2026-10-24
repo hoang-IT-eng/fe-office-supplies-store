@@ -3,16 +3,164 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Đơn hàng của tôi - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Đơn hàng của tôi - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang danh sách đơn hàng -->
+  <style>
+    .orders-page {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .orders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* Mỗi đơn hàng là một thẻ bấm được, dẫn sang trang chi tiết */
+    .order-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+    .order-row:hover {
+      box-shadow: var(--shadow-elevated);
+    }
+    .order-row-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.5rem;
+      background: var(--primary-fixed);
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .order-row-icon .lucide {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    .order-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+    /* Hàng mã đơn + chip trạng thái */
+    .order-row-code-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .order-row-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+    }
+    .order-row-date {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+      margin-top: 0.25rem;
+    }
+    .order-row-amount {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 1.125rem;
+      text-align: right;
+    }
+    .order-row-arrow {
+      color: var(--on-surface-variant);
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <div class="orders-page">
+        <div class="page-heading">
+          <i data-lucide="package"></i>
+          <h1 class="section-title">Đơn hàng của tôi</h1>
+          <span class="chip chip-info" id="so-don-hang">0 đơn</span>
+        </div>
+
+        <p class="loading-block" id="khoi-dang-tai">Đang tải...</p>
+
+        <!-- Chưa có đơn nào -->
+        <div class="card empty-block" id="khoi-chua-co-don" hidden>
+          <div class="empty-block-icon"><i data-lucide="package"></i></div>
+          <h2 class="empty-block-title">Chưa có đơn hàng nào</h2>
+          <p>Hãy bắt đầu mua sắm và quay lại đây!</p>
+          <p><a href="index.html" class="btn btn-primary">Khám phá sản phẩm</a></p>
+        </div>
+
+        <!-- Danh sách đơn hàng do JS đổ vào -->
+        <div class="orders-list" id="danh-sach-don-hang"></div>
+      </div>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/orders.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { duongDanTrang } from './js/config.js';
+    import { dinhDangTien, dinhDangNgay, nhanTrangThaiDon, chipTrangThaiDon, chuoiAnToan } from './js/format.js';
+    import { dungKhungKhachHang, veIcon, batBuocDangNhap } from './js/layout.js';
+
+    const khoiDangTai = document.getElementById('khoi-dang-tai');
+    const khoiChuaCoDon = document.getElementById('khoi-chua-co-don');
+    const danhSachEl = document.getElementById('danh-sach-don-hang');
+
+    /** Tạo HTML cho 1 đơn hàng trong danh sách */
+    function taoHtmlDonHang(don) {
+      return `
+        <a href="${duongDanTrang('order-detail.html', { id: don.id })}" class="card order-row">
+          <div class="order-row-icon"><i data-lucide="package"></i></div>
+          <div class="order-row-info">
+            <div class="order-row-code-line">
+              <span class="order-row-code">#${chuoiAnToan(don.code)}</span>
+              <span class="chip ${chipTrangThaiDon[don.status] || 'chip-neutral'}">
+                ${nhanTrangThaiDon[don.status] || chuoiAnToan(don.status)}
+              </span>
+            </div>
+            <div class="order-row-date">${dinhDangNgay(don.createdAt)}</div>
+          </div>
+          <div class="order-row-amount">${dinhDangTien(don.totalAmount)}</div>
+          <i data-lucide="arrow-right" class="order-row-arrow"></i>
+        </a>`;
+    }
+
+    /** Hiển thị danh sách đơn hàng, hoặc khối "chưa có đơn" nếu rỗng */
+    function veDanhSachDonHang(danhSach) {
+      khoiDangTai.hidden = true;
+      document.getElementById('so-don-hang').textContent = `${danhSach.length} đơn`;
+
+      khoiChuaCoDon.hidden = danhSach.length > 0;
+      danhSachEl.innerHTML = danhSach.map(taoHtmlDonHang).join('');
+
+      veIcon();
+    }
+
+    /** Khởi động trang: gọi API lấy đơn hàng của người đang đăng nhập */
+    async function khoiDong() {
+      if (!batBuocDangNhap()) return;
+      dungKhungKhachHang('orders');
+
+      try {
+        const danhSach = await api.get('/orders/me');
+        veDanhSachDonHang(danhSach || []);
+      } catch {
+        veDanhSachDonHang([]);
+      }
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

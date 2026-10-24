@@ -5,23 +5,231 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản lý danh mục - Admin</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+
+  <!-- CSS RIÊNG của trang quản lý danh mục -->
+  <style>
+    /* Form thêm/sửa: 3 cột (tên, mô tả, nút) — màn hẹp tự xuống dòng */
+    .category-form {
+      padding: 1.25rem;
+    }
+    /* Hàng nút nằm cùng dòng với 2 ô nhập, không chiếm hết chiều rộng */
+    .category-form-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <div style="display:flex;min-height:100vh;background:var(--surface)">
-    <aside
-      id="admin-aside"
-      style="
-        position:fixed;left:0;top:0;height:100vh;width:16rem;
-        background:var(--surface-lowest);border-right:1px solid var(--outline-variant);
-        display:flex;flex-direction:column;padding:1.5rem 1rem;z-index:40;box-sizing:border-box
-      "
-    ></aside>
-    <main
-      id="app"
-      style="margin-left:16rem;flex:1;padding:2rem;max-width:80rem;width:100%;box-sizing:border-box;min-width:0"
-    ></main>
+  <!-- Khung admin: sidebar cố định bên trái + vùng nội dung bên phải -->
+  <div class="admin-shell">
+    <aside class="admin-aside" id="admin-aside"></aside>
+
+    <main class="admin-content">
+      <div class="admin-page">
+        <!-- Tiêu đề trang -->
+        <div>
+          <div class="admin-kicker">
+            <span class="ms material-symbols-outlined">category</span>
+            <span>Phân loại danh mục</span>
+          </div>
+          <h1 class="page-title" style="margin-top:.25rem">Quản lý danh mục</h1>
+          <div class="page-subtitle">
+            <i data-lucide="folder-tree"></i>
+            <p>Tạo và quản lý các danh mục sản phẩm.</p>
+          </div>
+        </div>
+
+        <!-- Form thêm mới / cập nhật danh mục -->
+        <form id="form-danh-muc" class="card admin-form category-form">
+          <div class="form-field">
+            <label class="form-label" for="name">Tên danh mục *</label>
+            <input id="name" class="form-input" placeholder="Ví dụ: Bút viết" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="description">Mô tả</label>
+            <input id="description" class="form-input" placeholder="Mô tả ngắn..." />
+          </div>
+          <div class="category-form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="plus"></i> <span id="nhan-nut-luu">Thêm</span>
+            </button>
+            <button type="button" id="nut-huy-sua" class="btn btn-outline" hidden>Hủy</button>
+          </div>
+        </form>
+
+        <!-- Bảng danh sách danh mục -->
+        <div class="card card-flush">
+          <div class="list-header">Danh sách danh mục (<span id="so-danh-muc">0</span>)</div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="data-table-head">
+                <tr>
+                  <th>Tên</th>
+                  <th>Slug</th>
+                  <th>Mô tả</th>
+                  <th class="cell-actions">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="danh-sach-danh-muc">
+                <tr><td colspan="4" class="cell-empty">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-  <script type="module" src="../js/pages/admin/categories.js"></script>
+
+  <script type="module">
+    import { api } from '../js/api.js';
+    import { thongBao } from '../js/toast.js';
+    import { chuoiAnToan } from '../js/format.js';
+    import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
+    import { tuDongXoaLoi, kiemTraForm } from '../js/validate.js';
+
+    const form = document.getElementById('form-danh-muc');
+    const bangEl = document.getElementById('danh-sach-danh-muc');
+
+    let danhSachDanhMuc = [];
+    let danhMucDangSuaId = null; // null = đang ở chế độ thêm mới
+
+    /** Vẽ các dòng của bảng danh mục */
+    function veBangDanhMuc() {
+      document.getElementById('so-danh-muc').textContent = danhSachDanhMuc.length;
+
+      if (danhSachDanhMuc.length === 0) {
+        bangEl.innerHTML = '<tr><td colspan="4" class="cell-empty">Chưa có danh mục nào</td></tr>';
+        return;
+      }
+
+      bangEl.innerHTML = danhSachDanhMuc
+        .map(
+          (danhMuc) => `
+            <tr>
+              <td class="cell-strong">${chuoiAnToan(danhMuc.name)}</td>
+              <td class="mono muted">${chuoiAnToan(danhMuc.slug || '')}</td>
+              <td class="muted">${chuoiAnToan(danhMuc.description || '—')}</td>
+              <td class="cell-actions">
+                <button type="button" class="icon-btn icon-btn-edit" data-sua="${chuoiAnToan(danhMuc.id)}" title="Sửa">
+                  <i data-lucide="pen"></i>
+                </button>
+                <button type="button" class="icon-btn icon-btn-delete" data-xoa="${chuoiAnToan(danhMuc.id)}" title="Xóa">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </td>
+            </tr>`,
+        )
+        .join('');
+
+      ganSuKienBang();
+      veIcon();
+    }
+
+    /** Gắn sự kiện nút Sửa / Xóa trên từng dòng */
+    function ganSuKienBang() {
+      bangEl.querySelectorAll('[data-sua]').forEach((nut) =>
+        nut.addEventListener('click', () => batDauSua(nut.dataset.sua)),
+      );
+      bangEl.querySelectorAll('[data-xoa]').forEach((nut) =>
+        nut.addEventListener('click', () => xuLyXoa(nut.dataset.xoa)),
+      );
+    }
+
+    /** Đưa dữ liệu 1 danh mục lên form để sửa */
+    function batDauSua(id) {
+      const danhMuc = danhSachDanhMuc.find((x) => x.id === id);
+      if (!danhMuc) return;
+
+      danhMucDangSuaId = danhMuc.id;
+      document.getElementById('name').value = danhMuc.name || '';
+      document.getElementById('description').value = danhMuc.description || '';
+      document.getElementById('nhan-nut-luu').textContent = 'Cập nhật';
+      document.getElementById('nut-huy-sua').hidden = false;
+    }
+
+    /** Trả form về trạng thái thêm mới */
+    function huyCheDoSua() {
+      danhMucDangSuaId = null;
+      form.reset();
+      document.getElementById('nhan-nut-luu').textContent = 'Thêm';
+      document.getElementById('nut-huy-sua').hidden = true;
+    }
+
+    /** Kiểm tra form rồi gọi API tạo mới hoặc cập nhật danh mục */
+    async function xuLyLuuDanhMuc(suKien) {
+      suKien.preventDefault();
+
+      const ketQua = kiemTraForm(
+        [
+          { id: 'name', label: 'Tên danh mục', rules: ['required', 'minLength:2', 'maxLength:100'] },
+          { id: 'description', label: 'Mô tả', rules: ['maxLength:500'] },
+        ],
+        form,
+        thongBao,
+      );
+      if (!ketQua) return;
+
+      const duLieuGui = {
+        name: ketQua.values.name.trim(),
+        description: String(ketQua.values.description || '').trim(),
+      };
+
+      try {
+        // Có id đang sửa → PATCH, ngược lại → POST tạo mới
+        if (danhMucDangSuaId) {
+          await api.patch(`/categories/${danhMucDangSuaId}`, duLieuGui);
+          thongBao.thanhCong('Đã cập nhật danh mục');
+        } else {
+          await api.post('/categories', duLieuGui);
+          thongBao.thanhCong('Đã thêm danh mục');
+        }
+        huyCheDoSua();
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không lưu được danh mục');
+      }
+    }
+
+    /** Xác nhận rồi gọi API xóa danh mục */
+    async function xuLyXoa(id) {
+      if (!confirm('Xóa danh mục?')) return;
+      try {
+        await api.delete(`/categories/${id}`);
+        thongBao.thanhCong('Đã xóa danh mục');
+        if (danhMucDangSuaId === id) huyCheDoSua();
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không xóa được danh mục');
+      }
+    }
+
+    /** Gọi API lấy danh sách danh mục rồi vẽ lại bảng */
+    async function taiDanhSach() {
+      danhSachDanhMuc = (await api.get('/categories')) || [];
+      veBangDanhMuc();
+    }
+
+    /** Khởi động trang: chặn người không phải admin, dựng sidebar rồi tải dữ liệu */
+    async function khoiDong() {
+      if (!batBuocAdmin()) return;
+      dungKhungAdmin('categories');
+
+      tuDongXoaLoi(form);
+      form.addEventListener('submit', xuLyLuuDanhMuc);
+      document.getElementById('nut-huy-sua').addEventListener('click', huyCheDoSua);
+
+      try {
+        await taiDanhSach();
+      } catch {
+        bangEl.innerHTML = '<tr><td colspan="4" class="cell-empty">Không tải được danh mục</td></tr>';
+      }
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

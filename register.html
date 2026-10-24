@@ -3,16 +3,194 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Đăng ký - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Đăng ký - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang đăng ký -->
+  <style>
+    .register-card {
+      max-width: 32rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Phần đầu thẻ: icon tròn + tiêu đề + mô tả, tất cả căn giữa */
+    .register-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .register-header-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.75rem;
+      background: var(--primary);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 0.75rem;
+    }
+    .register-header-icon .lucide {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    .register-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .register-subtitle {
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+    }
+
+    /* Các ô nhập cách nhau vừa phải (form dài nên hẹp hơn mặc định) */
+    .register-form {
+      gap: 0.75rem;
+    }
+    .register-submit {
+      margin-top: 0.5rem;
+    }
+    .register-footer {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+      margin-top: 1.25rem;
+    }
+    .register-footer a {
+      color: var(--primary);
+      font-weight: 600;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <section class="card card-elevated register-card">
+        <div class="register-header">
+          <div class="register-header-icon"><i data-lucide="user-plus"></i></div>
+          <h1 class="register-title">Đăng ký tài khoản</h1>
+          <p class="register-subtitle">Tạo tài khoản để bắt đầu mua sắm</p>
+        </div>
+
+        <form id="form-dang-ky" class="form-stack register-form">
+          <div class="form-field">
+            <label class="form-label" for="fullName">Họ và tên *</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="user" class="input-icon"></i>
+              <input id="fullName" class="form-input form-input-with-icon" placeholder="Họ và tên" required />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="email">Email *</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="mail" class="input-icon"></i>
+              <input id="email" class="form-input form-input-with-icon" type="email" placeholder="Email" required />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="password">Mật khẩu *</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input
+                id="password"
+                class="form-input form-input-with-icon form-input-with-toggle"
+                type="password"
+                placeholder="Mật khẩu (≥ 6 ký tự)"
+                minlength="6"
+                required
+              />
+              <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="phone">Số điện thoại</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="phone" class="input-icon"></i>
+              <input id="phone" class="form-input form-input-with-icon" placeholder="0912345678" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="address">Địa chỉ</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="map-pin" class="input-icon"></i>
+              <input id="address" class="form-input form-input-with-icon" placeholder="Địa chỉ" />
+            </div>
+          </div>
+
+          <button type="submit" id="nut-dang-ky" class="btn btn-primary btn-block btn-lg register-submit">
+            Đăng ký
+          </button>
+        </form>
+
+        <p class="register-footer">Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+      </section>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/register.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { thongBao } from './js/toast.js';
+    import { dungKhungKhachHang, veIcon } from './js/layout.js';
+    import { tuDongXoaLoi, kiemTraForm } from './js/validate.js';
+
+    const form = document.getElementById('form-dang-ky');
+    const nutGui = document.getElementById('nut-dang-ky');
+
+    /** Kiểm tra form rồi gọi API tạo tài khoản mới */
+    async function xuLyDangKy(suKien) {
+      suKien.preventDefault();
+
+      // Validate từng ô: bắt buộc, độ dài, định dạng email / số điện thoại
+      const ketQua = kiemTraForm(
+        [
+          { id: 'fullName', label: 'Họ và tên', rules: ['required', 'minLength:2', 'maxLength:100'] },
+          { id: 'email', label: 'Email', rules: ['required', 'email'] },
+          { id: 'password', label: 'Mật khẩu', rules: ['required', 'minLength:6', 'maxLength:64'] },
+          { id: 'phone', label: 'Số điện thoại', rules: ['phone'] },
+          { id: 'address', label: 'Địa chỉ', rules: ['maxLength:255'] },
+        ],
+        form,
+        thongBao,
+      );
+      if (!ketQua) return;
+
+      nutGui.disabled = true;
+      nutGui.textContent = 'Đang xử lý...';
+
+      try {
+        // Gọi API đăng ký; backend gửi email xác thực cho người dùng
+        await api.post('/auth/register', {
+          fullName: ketQua.values.fullName.trim(),
+          email: ketQua.values.email.trim(),
+          password: ketQua.values.password,
+          phone: String(ketQua.values.phone || '').trim() || undefined,
+          address: String(ketQua.values.address || '').trim() || undefined,
+        });
+        thongBao.thanhCong('Đăng ký thành công, vui lòng kiểm tra email để xác thực');
+        setTimeout(() => (location.href = 'login.html'), 1200);
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Đăng ký thất bại');
+        nutGui.disabled = false;
+        nutGui.textContent = 'Đăng ký';
+      }
+    }
+
+    dungKhungKhachHang('');
+    tuDongXoaLoi(form);
+    form.addEventListener('submit', xuLyDangKy);
+    veIcon();
+  </script>
 </body>
 </html>

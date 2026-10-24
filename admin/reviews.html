@@ -5,23 +5,289 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản lý đánh giá - Admin</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+
+  <!-- CSS RIÊNG của trang quản lý đánh giá -->
+  <style>
+    .review-filter {
+      padding: 1rem;
+    }
+    /* Ô "Khách hàng": avatar + tên + email */
+    .review-user {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .review-user .avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .review-user-name {
+      font-weight: 700;
+    }
+    .review-user-email {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+    }
+    /* Ô số sao: 5 icon + số điểm */
+    .review-stars-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .review-stars-value {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-left: 0.25rem;
+    }
+    /* Nội dung nhận xét không cho cột quá rộng */
+    .review-comment-cell {
+      max-width: 280px;
+    }
+    .review-date-cell {
+      font-size: 0.75rem;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <div style="display:flex;min-height:100vh;background:var(--surface)">
-    <aside
-      id="admin-aside"
-      style="
-        position:fixed;left:0;top:0;height:100vh;width:16rem;
-        background:var(--surface-lowest);border-right:1px solid var(--outline-variant);
-        display:flex;flex-direction:column;padding:1.5rem 1rem;z-index:40;box-sizing:border-box
-      "
-    ></aside>
-    <main
-      id="app"
-      style="margin-left:16rem;flex:1;padding:2rem;max-width:80rem;width:100%;box-sizing:border-box;min-width:0"
-    ></main>
+  <div class="admin-shell">
+    <aside class="admin-aside" id="admin-aside"></aside>
+
+    <main class="admin-content">
+      <div class="admin-page">
+        <!-- Tiêu đề + 3 ô thống kê -->
+        <section class="admin-page-header">
+          <div>
+            <div class="admin-kicker">
+              <span class="ms material-symbols-outlined">rate_review</span>
+              <span>Phản hồi khách hàng</span>
+            </div>
+            <h1 class="page-title" style="margin-top:.25rem">Đánh giá &amp; Phản hồi</h1>
+            <div class="page-subtitle">
+              <i data-lucide="star"></i>
+              <p>Xem và xóa đánh giá sản phẩm từ khách hàng.</p>
+            </div>
+          </div>
+
+          <div class="stat-card-group">
+            <div class="stat-card stat-card-primary">
+              <div class="stat-card-icon"><i data-lucide="message-square"></i></div>
+              <div>
+                <p class="stat-card-label">Tổng</p>
+                <p class="stat-card-value" id="tong-danh-gia">0</p>
+              </div>
+            </div>
+            <div class="stat-card stat-card-rating">
+              <div class="stat-card-icon"><i data-lucide="star"></i></div>
+              <div>
+                <p class="stat-card-label">Trung bình</p>
+                <p class="stat-card-value" id="diem-trung-binh">0</p>
+              </div>
+            </div>
+            <div class="stat-card stat-card-danger">
+              <div class="stat-card-icon"><i data-lucide="thumbs-down"></i></div>
+              <div>
+                <p class="stat-card-label">≤ 2 sao</p>
+                <p class="stat-card-value" id="so-sao-thap">0</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bộ lọc: tìm theo từ khóa và lọc theo số sao -->
+        <section class="card filter-bar review-filter">
+          <div class="form-field filter-bar-grow">
+            <label class="form-label" for="tu-khoa">Tìm kiếm</label>
+            <input id="tu-khoa" class="form-input" placeholder="Người dùng, sản phẩm, nội dung..." />
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="loc-so-sao">Số sao</label>
+            <select id="loc-so-sao" class="form-input">
+              <option value="">Tất cả</option>
+              <option value="5">5 sao</option>
+              <option value="4">4 sao</option>
+              <option value="3">3 sao</option>
+              <option value="2">2 sao</option>
+              <option value="1">1 sao</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Bảng danh sách đánh giá -->
+        <div class="card card-flush">
+          <div class="list-header">Danh sách đánh giá (<span id="so-dong">0</span>)</div>
+          <div class="table-scroll">
+            <table class="data-table data-table-wide">
+              <thead class="data-table-head">
+                <tr>
+                  <th>Khách hàng</th>
+                  <th>Sản phẩm</th>
+                  <th>Đánh giá</th>
+                  <th>Nội dung</th>
+                  <th>Ngày</th>
+                  <th class="cell-actions">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="danh-sach-danh-gia">
+                <tr><td colspan="6" class="cell-empty">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-  <script type="module" src="../js/pages/admin/reviews.js"></script>
+
+  <script type="module">
+    import { api } from '../js/api.js';
+    import { dinhDangNgay, chuoiAnToan } from '../js/format.js';
+    import { thongBao } from '../js/toast.js';
+    import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
+
+    const bangEl = document.getElementById('danh-sach-danh-gia');
+
+    let danhSachDanhGia = [];
+    let tuKhoaTimKiem = '';
+    let soSaoDangLoc = '';
+
+    /** 5 ngôi sao, tô vàng nếu điểm >= n */
+    function taoHtmlSao(soSao) {
+      return [1, 2, 3, 4, 5]
+        .map((n) => `<i data-lucide="star" class="star star-small ${soSao >= n ? 'star-filled' : ''}"></i>`)
+        .join('');
+    }
+
+    /** Lọc danh sách theo từ khóa và số sao đang chọn */
+    function locDanhGia() {
+      const tuKhoa = tuKhoaTimKiem.trim().toLowerCase();
+
+      return danhSachDanhGia.filter((danhGia) => {
+        if (soSaoDangLoc !== '' && Number(danhGia.rating) !== Number(soSaoDangLoc)) return false;
+        if (tuKhoa === '') return true;
+
+        // Tìm trong tên, email khách, tên sản phẩm và nội dung nhận xét
+        const noiDungTim = [danhGia.user?.fullName, danhGia.user?.email, danhGia.product?.name, danhGia.comment]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return noiDungTim.includes(tuKhoa);
+      });
+    }
+
+    /** Tính 3 số thống kê: tổng, điểm trung bình, số đánh giá ≤ 2 sao */
+    function veThongKe() {
+      const tongSo = danhSachDanhGia.length;
+      let tongDiem = 0;
+      let soSaoThap = 0;
+
+      danhSachDanhGia.forEach((danhGia) => {
+        const diem = Number(danhGia.rating);
+        tongDiem += diem;
+        if (diem <= 2) soSaoThap += 1;
+      });
+
+      document.getElementById('tong-danh-gia').textContent = tongSo;
+      document.getElementById('diem-trung-binh').textContent = tongSo === 0 ? '0' : (tongDiem / tongSo).toFixed(1);
+      document.getElementById('so-sao-thap').textContent = soSaoThap;
+    }
+
+    /** Tạo HTML cho 1 dòng đánh giá */
+    function taoHtmlDongDanhGia(danhGia) {
+      return `
+        <tr>
+          <td>
+            <div class="review-user">
+              <div class="avatar">${chuoiAnToan((danhGia.user?.fullName || 'U').charAt(0).toUpperCase())}</div>
+              <div>
+                <div class="review-user-name">${chuoiAnToan(danhGia.user?.fullName || '—')}</div>
+                <div class="review-user-email">${chuoiAnToan(danhGia.user?.email || '')}</div>
+              </div>
+            </div>
+          </td>
+          <td class="cell-strong">${chuoiAnToan(danhGia.product?.name || '—')}</td>
+          <td>
+            <div class="review-stars-cell">
+              ${taoHtmlSao(Number(danhGia.rating))}
+              <span class="review-stars-value">${danhGia.rating}</span>
+            </div>
+          </td>
+          <td class="review-comment-cell">${chuoiAnToan(danhGia.comment)}</td>
+          <td class="muted review-date-cell">${dinhDangNgay(danhGia.createdAt)}</td>
+          <td class="cell-actions">
+            <button type="button" class="icon-btn icon-btn-delete" data-xoa="${chuoiAnToan(danhGia.id)}" title="Xóa đánh giá">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>`;
+    }
+
+    /** Vẽ lại bảng theo bộ lọc hiện tại (chỉ vẽ phần thân bảng nên không mất con trỏ đang gõ) */
+    function veBangDanhGia() {
+      veThongKe();
+      const danhSachDaLoc = locDanhGia();
+      document.getElementById('so-dong').textContent = danhSachDaLoc.length;
+
+      bangEl.innerHTML =
+        danhSachDaLoc.length === 0
+          ? '<tr><td colspan="6" class="cell-empty">Không có đánh giá nào phù hợp</td></tr>'
+          : danhSachDaLoc.map(taoHtmlDongDanhGia).join('');
+
+      bangEl.querySelectorAll('[data-xoa]').forEach((nut) =>
+        nut.addEventListener('click', () => xuLyXoa(nut.dataset.xoa)),
+      );
+      veIcon();
+    }
+
+    /** Xác nhận rồi gọi API xóa 1 đánh giá */
+    async function xuLyXoa(id) {
+      if (!confirm('Xóa đánh giá này?')) return;
+      try {
+        await api.delete(`/reviews/${id}`);
+        thongBao.thanhCong('Đã xóa đánh giá');
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không xóa được đánh giá');
+      }
+    }
+
+    /** Gắn sự kiện cho ô tìm kiếm và ô chọn số sao */
+    function ganSuKienBoLoc() {
+      document.getElementById('tu-khoa').addEventListener('input', (suKien) => {
+        tuKhoaTimKiem = suKien.target.value;
+        veBangDanhGia();
+      });
+      document.getElementById('loc-so-sao').addEventListener('change', (suKien) => {
+        soSaoDangLoc = suKien.target.value;
+        veBangDanhGia();
+      });
+    }
+
+    /** Gọi API lấy toàn bộ đánh giá rồi vẽ lại bảng */
+    async function taiDanhSach() {
+      danhSachDanhGia = (await api.get('/reviews')) || [];
+      veBangDanhGia();
+    }
+
+    /** Khởi động trang quản lý đánh giá */
+    async function khoiDong() {
+      if (!batBuocAdmin()) return;
+      dungKhungAdmin('reviews');
+
+      ganSuKienBoLoc();
+
+      try {
+        await taiDanhSach();
+      } catch (loi) {
+        bangEl.innerHTML = `<tr><td colspan="6" class="cell-empty">${chuoiAnToan(
+          loi?.response?.data?.message || 'Không tải được danh sách đánh giá',
+        )}</td></tr>`;
+      }
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

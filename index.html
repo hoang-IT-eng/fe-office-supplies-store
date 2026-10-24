@@ -3,180 +3,951 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Văn phòng phẩm Trần Huy Hoàng - Mua sắm trực tuyến</title>
+  <title>Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
 
-  <!-- CSS riêng của trang chủ, viết trực tiếp trong file HTML này (internal CSS) -->
   <style>
-    /* ===== Bố cục chung: các khối của trang chủ xếp dọc, cách nhau 2rem ===== */
-    .home-page {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
+    .home-page { display: flex; flex-direction: column; }
 
-    /* ===== Hộp "Tìm kiếm & lọc sản phẩm" ===== */
-    .filter-box {
-      padding: 1.25rem;
-    }
-
-    /* Dòng tiêu đề: icon nằm cạnh chữ */
-    .filter-heading {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .filter-heading h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-    .filter-heading-icon {
-      width: 18px;
-      height: 18px;
-      color: var(--primary);
-    }
-
-    /* Hàng ô nhập: 5 cột (từ khóa, danh mục, giá từ, giá đến, nút Lọc) */
-    .filter-fields {
-      display: grid;
-      grid-template-columns: 2fr 1.5fr 1fr 1fr auto;
-      gap: 0.75rem;
-      align-items: end;
-    }
-
-    /* Màn hình nhỏ: xếp các ô nhập thành 1 cột cho dễ bấm */
-    @media (max-width: 768px) {
-      .filter-fields {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Ô tìm kiếm có icon kính lúp nằm bên trong, phía trái */
-    .filter-search {
+    .home-hero {
       position: relative;
-    }
-    .filter-search-icon {
-      position: absolute;
-      left: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
-      color: var(--on-surface-variant);
-      pointer-events: none;
-    }
-    /* Chừa chỗ trống bên trái để chữ không đè lên icon */
-    .filter-search-input {
-      padding-left: 2.5rem;
-    }
-
-    /* Hàng nút chip danh mục nhanh, tự xuống dòng khi hết chỗ */
-    .filter-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-    .filter-chip-icon {
-      width: 14px;
-      height: 14px;
-    }
-
-    /* ===== Thẻ sản phẩm ===== */
-
-    /* Icon hiện thay cho ảnh khi sản phẩm chưa có ảnh */
-    .product-card-no-image {
-      width: 48px;
-      height: 48px;
-      color: var(--on-surface-variant);
-    }
-
-    /* Nhãn "-20%" ở góc trên bên trái ảnh */
-    .product-discount-badge {
-      position: absolute;
-      top: 0.5rem;
-      left: 0.5rem;
-      background: var(--tertiary);
-      color: #ffffff;
-    }
-
-    /* Nhãn "Hết hàng" ở góc trên bên phải ảnh */
-    .product-stock-badge {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-    }
-
-    .product-card-category {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--on-surface-variant);
-    }
-
-    /* Tên sản phẩm chỉ hiện tối đa 2 dòng, dài hơn thì hiện dấu ... */
-    .product-card-name {
-      font-weight: 600;
-      margin-top: 0.125rem;
-      min-height: 44px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
+      min-height: calc(100vh - 150px);
+      min-height: calc(100dvh - 150px);
+      display: grid;
+      place-items: end center;
+      background: var(--tile);
+      color: #fff;
       overflow: hidden;
     }
+    .home-hero img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 30% center;
+    }
+    .hero-fallback,
+    .media-fallback {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: var(--tile);
+      color: var(--navy-soft);
+      letter-spacing: .2em;
+      font-size: 13px;
+    }
+    .home-hero-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(11, 30, 68, .55), rgba(11, 30, 68, .15));
+    }
+    .home-hero-copy {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 0 1.25rem 9vh;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 1.25rem;
+    }
+    .btn-hero {
+      height: 48px;
+      padding: 0 1.5rem;
+      border: 1px solid #fff;
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      font-size: 12px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .btn-hero:hover { background: #fff; color: var(--navy); }
 
-    /* Dòng giá: giá bán và giá cũ nằm cạnh nhau */
-    .product-card-prices {
+    .home-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+    @media (min-width: 900px) {
+      .home-split { grid-template-columns: 1fr 1fr; min-height: 520px; }
+    }
+    .home-split-copy {
       display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1rem;
+      padding: 3.5rem 1.5rem;
+      max-width: 36rem;
     }
-    .product-card-price {
-      font-size: 1.125rem;
-      font-weight: 700;
-      color: var(--primary);
+    @media (min-width: 900px) { .home-split-copy { padding: 4rem 4.5rem; } }
+    .home-split-copy h2 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      line-height: 1.05;
+      color: var(--navy);
     }
-    .product-card-old-price {
-      font-size: 0.75rem;
-      color: var(--on-surface-variant);
-      text-decoration: line-through;
+    .home-split-copy p { color: var(--navy-soft); max-width: 36ch; font-weight: 300; }
+    .home-split-media {
+      position: relative;
+      min-height: 280px;
+      background: var(--tile);
+      overflow: hidden;
     }
-    .product-card-button-icon {
-      width: 14px;
-      height: 14px;
+    .home-split-media img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+
+    .home-block { padding: 3rem 1.25rem 2rem; }
+    .home-block .fq-section-title { margin-bottom: 1.5rem; }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--line);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .category-card {
+      position: relative;
+      min-height: 240px;
+      padding: 0;
+      border: 0;
+      background: var(--tile);
+      overflow: hidden;
+      color: #fff;
+      cursor: pointer;
+      text-align: center;
+    }
+    @media (min-width: 768px) { .category-card { min-height: 340px; } }
+    .category-media {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #ddd8d0;
+      transition: transform .6s ease;
+    }
+    .category-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(11, 30, 68, .5), rgba(11, 30, 68, .12) 48%, rgba(11, 30, 68, 0) 70%);
+    }
+    .category-card:hover .category-media { transform: scale(1.04); }
+    .category-card h3,
+    .category-more { position: relative; z-index: 1; }
+    .category-card h3 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(1.3rem, 2.4vw, 2rem);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin-top: 38%;
+    }
+    .category-more {
+      display: block;
+      margin-top: .65rem;
+      font-size: 13px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
     }
 
-    /* ===== Thông báo trạng thái của danh sách sản phẩm ===== */
-    .products-loading {
-      text-align: center;
-      padding: 5rem 0;
-      color: var(--on-surface-variant);
+    .flash-panel {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      min-height: 52px;
+      padding: 0 1.25rem;
+      background: #fff;
+      color: var(--navy);
+      border-bottom: 1px solid var(--line);
     }
-    .products-empty {
+    .flash-head { display: flex; align-items: center; gap: .75rem; margin: 0; flex-shrink: 0; }
+    .flash-kicker {
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .countdown { display: flex; align-items: center; gap: .3rem; font-variant-numeric: tabular-nums; }
+    .countdown-box { display: flex; flex-direction: column; align-items: center; min-width: 2rem; }
+    .countdown-box strong { font-weight: 500; font-size: 14px; }
+    .countdown-box span { font-size: 9px; letter-spacing: .04em; color: var(--navy-soft); }
+    .countdown-sep { color: var(--navy-soft); }
+    .flash-grid {
+      display: flex;
+      gap: 1rem;
+      overflow: auto;
+      flex: 1;
+      font-size: 13px;
+      color: var(--navy-soft);
+    }
+    .flash-item { white-space: nowrap; }
+
+    .carousel { position: relative; }
+    .carousel-track {
+      display: flex;
+      gap: 1px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      background: var(--line);
+      border: 1px solid var(--line);
+      scrollbar-width: none;
+    }
+    .carousel-track::-webkit-scrollbar { display: none; }
+    .carousel-track .product-card { flex: 0 0 calc(50% - 1px); scroll-snap-align: start; }
+    @media (min-width: 1280px) {
+      .carousel-track .product-card { flex-basis: calc(25% - 1px); }
+    }
+    .carousel-btn {
+      position: absolute;
+      top: 38%;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--navy);
+      display: grid;
+      place-items: center;
+      z-index: 2;
+    }
+    .carousel-btn-prev { left: 8px; }
+    .carousel-btn-next { right: 8px; }
+
+    .filter-box {
+      padding: 0 0 1rem;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+    .filter-fields {
+      display: grid;
+      grid-template-columns: 2fr 1.4fr 1fr 1fr auto;
+      gap: .75rem;
+      align-items: end;
+    }
+    @media (max-width: 768px) {
+      .filter-fields { grid-template-columns: 1fr; }
+    }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+    .product-count-note { margin: .35rem 0 .75rem; color: var(--navy-soft); font-size: .9rem; }
+
+    .b2b-panel {
+      display: grid;
+      grid-template-columns: 1fr;
+      border-top: 1px solid var(--line);
+    }
+    @media (min-width: 900px) { .b2b-panel { grid-template-columns: 1fr 1fr; } }
+    .b2b-copy { background: var(--navy); color: #fff; padding: 2.5rem 1.5rem; }
+    @media (min-width: 768px) { .b2b-copy { padding: 3.5rem; } }
+    .b2b-copy h2 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2rem, 3vw, 2.8rem);
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+    .b2b-copy p { color: rgba(255, 255, 255, .82); margin-bottom: 1.25rem; font-weight: 300; }
+    .b2b-list { display: flex; flex-direction: column; gap: .65rem; }
+    .b2b-list li { display: flex; align-items: flex-start; gap: .5rem; font-size: .95rem; }
+    .b2b-form { background: #fff; padding: 1.5rem; display: flex; flex-direction: column; gap: .85rem; }
+    @media (min-width: 768px) { .b2b-form { padding: 2.5rem; } }
+    .b2b-form h3 {
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .b2b-form-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+    @media (min-width: 560px) { .b2b-form-grid { grid-template-columns: 1fr 1fr; } }
+    .b2b-form-grid .full { grid-column: 1 / -1; }
+
+    .story-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--line);
+      border-top: 1px solid var(--line);
+    }
+    @media (min-width: 900px) { .story-row { grid-template-columns: repeat(4, 1fr); } }
+    .story-card { background: #fff; }
+    .story-media {
+      aspect-ratio: 1;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      display: block;
+      background: var(--tile);
+    }
+    .story-card figcaption {
+      padding: .85rem 1rem 1.1rem;
       text-align: center;
-      padding: 3rem;
-      color: var(--on-surface-variant);
+      font-size: 13px;
+      color: var(--navy-soft);
     }
 
-    /* ===== Phân trang ===== */
-    .pagination-icon {
-      width: 18px;
-      height: 18px;
+    .pagination-summary { margin-bottom: .75rem; color: var(--navy-soft); font-size: .875rem; text-align: center; }
+    .pagination-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; }
+    .pagination-btn {
+      min-width: 2.5rem;
+      height: 2.5rem;
+      padding: 0 .625rem;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      background: #fff;
+      font-size: .875rem;
+      font-weight: 400;
+    }
+    .pagination-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .pagination-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .pagination-ellipsis { min-width: 1.5rem; text-align: center; color: var(--navy-soft); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .category-card:hover .category-media { transform: none; }
     }
   </style>
+
 
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main site-main-home">
+      <div class="home-page">
+
+        <section class="home-hero reveal" id="bo-suu-tap" aria-label="Bộ sưu tập">
+          <img id="anh-hero" alt="Bộ sưu tập 2027" width="2400" height="1350" hidden />
+          <div class="hero-fallback" id="hero-fallback">ẢNH</div>
+          <div class="home-hero-shade" aria-hidden="true"></div>
+          <div class="home-hero-copy">
+            <h1 class="hero-title">Bộ sưu tập 2027</h1>
+            <a href="#san-pham-tieu-bieu" class="btn-hero">Khám phá</a>
+          </div>
+        </section>
+
+        <section class="home-split reveal">
+          <div class="home-split-copy">
+            <h2>Bộ sưu tập cao cấp</h2>
+            <p>Khám phá sự tinh xảo trong từng chi tiết.</p>
+            <a href="#featured-products" class="btn btn-primary">Mua ngay</a>
+          </div>
+          <div class="home-split-media">
+            <img id="anh-doi" src="images/folio/split-collection.webp" alt="Bộ sưu tập cao cấp" width="1200" height="900" />
+          </div>
+        </section>
+
+        <section id="muc-danh-muc" aria-labelledby="tieu-de-danh-muc">
+          <div class="home-block">
+            <h2 class="fq-section-title" id="tieu-de-danh-muc">Danh mục</h2>
+          </div>
+          <div class="category-grid" id="luoi-danh-muc">
+            <p class="loading-block">Đang tải danh mục...</p>
+          </div>
+        </section>
+
+        <section class="flash-panel" id="flash-sale" hidden>
+          <div class="flash-head">
+            <span class="flash-kicker">Ưu đãi trong ngày</span>
+            <div class="countdown" id="dem-nguoc" aria-label="Đếm ngược khuyến mãi">
+              <div class="countdown-box"><strong id="cd-gio">00</strong><span>giờ</span></div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-box"><strong id="cd-phut">00</strong><span>phút</span></div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-box seconds"><strong id="cd-giay">00</strong><span>giây</span></div>
+            </div>
+          </div>
+          <div class="flash-grid" id="luoi-flash"></div>
+        </section>
+
+        <section id="goi-y-cho-ban" class="home-block" hidden>
+          <h2 class="fq-section-title" id="goi-y-tieu-de">Gợi ý cho bạn</h2>
+          <p class="product-count-note" id="goi-y-kicker">Dành riêng cho bạn</p>
+          <div class="product-grid" id="luoi-goi-y"></div>
+        </section>
+
+        <section class="home-block" id="san-pham-tieu-bieu">
+          <h2 class="fq-section-title">Sản phẩm tiêu biểu</h2>
+          <div class="carousel">
+            <button type="button" class="carousel-btn carousel-btn-prev" id="carousel-truoc" aria-label="Xem phía trước">
+              <i data-lucide="chevron-left"></i>
+            </button>
+            <div class="carousel-track" id="bang-tieu-bieu"></div>
+            <button type="button" class="carousel-btn carousel-btn-next" id="carousel-sau" aria-label="Xem phía sau">
+              <i data-lucide="chevron-right"></i>
+            </button>
+          </div>
+        </section>
+
+        <section class="home-block" id="featured-products">
+          <h2 class="fq-section-title">Tất cả sản phẩm</h2>
+          <div class="filter-box" id="hop-bo-loc">
+            <p id="so-san-pham" class="product-count-note"></p>
+            <div class="filter-fields">
+              <div class="form-field input-icon-wrap">
+                <i data-lucide="search" class="input-icon"></i>
+                <input id="tu-khoa" class="form-input form-input-with-icon" placeholder="Tìm kiếm sản phẩm..." />
+              </div>
+              <select id="danh-muc" class="form-input" aria-label="Danh mục">
+                <option value="">Tất cả danh mục</option>
+              </select>
+              <input id="gia-tu" class="form-input" placeholder="Giá từ" type="number" min="0" />
+              <input id="gia-den" class="form-input" placeholder="Giá đến" type="number" min="0" />
+              <button type="button" id="nut-loc" class="btn btn-primary">Lọc</button>
+            </div>
+            <div class="filter-chips" id="chip-danh-muc"></div>
+          </div>
+          <div id="khung-san-pham">
+            <p class="loading-block">Đang tải...</p>
+          </div>
+          <nav id="khung-phan-trang" aria-label="Phân trang sản phẩm" style="margin-top: 1.5rem;"></nav>
+        </section>
+
+        <section class="b2b-panel reveal" id="b2b-form-section">
+          <div class="b2b-copy">
+            <h2>Quà tặng doanh nghiệp &amp; in logo</h2>
+            <p>Đặt số lượng lớn, xuất hóa đơn và giao theo lịch.</p>
+            <ul class="b2b-list">
+              <li><i data-lucide="check"></i> Báo giá theo nhu cầu từng phòng ban</li>
+              <li><i data-lucide="check"></i> Hóa đơn VAT điện tử</li>
+              <li><i data-lucide="check"></i> Giao hàng GHN, theo dõi đơn</li>
+              <li><i data-lucide="check"></i> Khắc tên và in logo</li>
+            </ul>
+          </div>
+          <form class="b2b-form" id="form-b2b">
+            <h3>Nhận tư vấn</h3>
+            <div class="b2b-form-grid">
+              <div class="form-field">
+                <label class="form-label" for="b2b-ten">Họ và tên</label>
+                <input id="b2b-ten" class="form-input" name="ten" required maxlength="80" />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="b2b-email">Email công ty</label>
+                <input id="b2b-email" class="form-input" type="email" name="email" required maxlength="120" />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="b2b-sdt">Số điện thoại</label>
+                <input id="b2b-sdt" class="form-input" name="sdt" required maxlength="20" />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="b2b-cty">Công ty</label>
+                <input id="b2b-cty" class="form-input" name="congTy" maxlength="120" />
+              </div>
+              <div class="form-field full">
+                <label class="form-label" for="b2b-nhu-cau">Nhu cầu</label>
+                <select id="b2b-nhu-cau" class="form-input" name="nhuCau">
+                  <option value="van-phong-pham">Văn phòng phẩm định kỳ</option>
+                  <option value="thiet-bi">Thiết bị văn phòng</option>
+                  <option value="qua-tang">Quà tặng doanh nghiệp</option>
+                  <option value="khac">Khác</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Gửi yêu cầu</button>
+          </form>
+        </section>
+
+        <section id="cau-chuyen">
+          <div class="home-block">
+            <h2 class="fq-section-title">Câu chuyện</h2>
+          </div>
+          <div class="story-row">
+            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-xuong-dong-so.webp" alt="Xưởng đóng sổ" width="1000" height="1000" loading="lazy" /><figcaption>Xưởng đóng sổ</figcaption></figure>
+            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-da-chi-khau.webp" alt="Da và chỉ khâu" width="1000" height="1000" loading="lazy" /><figcaption>Da và chỉ khâu</figcaption></figure>
+            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-ngoi-but.webp" alt="Ngòi bút" width="1000" height="1000" loading="lazy" /><figcaption>Ngòi bút</figcaption></figure>
+            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-goi-qua.webp" alt="Gói quà" width="1000" height="1000" loading="lazy" /><figcaption>Gói quà</figcaption></figure>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/home.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { taiKhoan } from './js/auth.js';
+    import { gioHang } from './js/cart.js';
+    import { duongDanTapTin, duongDanTrang } from './js/config.js';
+    import { dinhDangTien, chuoiAnToan } from './js/format.js';
+    import { dungKhungKhachHang, veIcon, ganHienKhiCuon } from './js/layout.js';
+    import { thongBao } from './js/toast.js';
+    import { tuDongXoaLoi, kiemTraForm } from './js/validate.js';
+
+    const SO_SAN_PHAM_MOI_TRANG = 8;
+    const ICON_DANH_MUC = ['pen-line', 'notebook', 'file-text', 'archive', 'paperclip', 'gift'];
+
+    const khungSanPham = document.getElementById('khung-san-pham');
+    const khungPhanTrang = document.getElementById('khung-phan-trang');
+    const hopBoLoc = document.getElementById('hop-bo-loc');
+    const oSoSanPham = document.getElementById('so-san-pham');
+    const luoiDanhMuc = document.getElementById('luoi-danh-muc');
+    const panelFlash = document.getElementById('flash-sale');
+    const luoiFlash = document.getElementById('luoi-flash');
+    const panelGoiY = document.getElementById('goi-y-cho-ban');
+    const luoiGoiY = document.getElementById('luoi-goi-y');
+
+    let danhSachDanhMuc = [];
+    let trangHienTai = 1;
+    const boLoc = { tuKhoa: '', danhMucId: '', giaTu: '', giaDen: '' };
+
+    function taoHtmlSaoTinh(soSao, kichCo = '') {
+      return [1, 2, 3, 4, 5]
+        .map((n) => `<i data-lucide="star" class="star ${kichCo} ${soSao >= n ? 'star-filled' : ''}"></i>`)
+        .join('');
+    }
+
+    function diemTrungBinh(sanPham) {
+      const reviews = sanPham.reviews || [];
+      if (!reviews.length) return 0;
+      return reviews.reduce((tong, dg) => tong + Number(dg.rating), 0) / reviews.length;
+    }
+
+    async function taiDanhMuc() {
+      try {
+        danhSachDanhMuc = await api.get('/categories');
+      } catch {
+        danhSachDanhMuc = [];
+      }
+    }
+
+    function dienSelectDanhMuc() {
+      const select = document.getElementById('danh-muc');
+      select.innerHTML =
+        '<option value="">Tất cả danh mục</option>' +
+        danhSachDanhMuc
+          .map((dm) => `<option value="${chuoiAnToan(dm.id)}">${chuoiAnToan(dm.name)}</option>`)
+          .join('');
+      select.value = boLoc.danhMucId;
+    }
+
+    function chonDanhMuc(id) {
+      boLoc.danhMucId = id || '';
+      trangHienTai = 1;
+      document.getElementById('danh-muc').value = boLoc.danhMucId;
+      veChipDanhMuc();
+      taiDanhSachSanPham();
+      document.getElementById('featured-products').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function fileAnhDanhMuc(tenGoc) {
+      const ten = String(tenGoc || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd');
+      if (ten.includes('ba lo')) return 'cat-ba-lo.webp';
+      if (ten.includes('but')) return 'cat-but-viet.webp';
+      if (ten.includes('sach')) return 'cat-sach-giao-khoa.webp';
+      if (ten.includes('van phong')) return 'cat-van-phong.webp';
+      if (ten.includes('vo') || ten.includes('so')) return 'cat-vo-so.webp';
+      return 'cat-tat-ca.webp';
+    }
+
+    function veLuoiDanhMuc() {
+      if (!danhSachDanhMuc.length) {
+        luoiDanhMuc.innerHTML = '<div class="card empty-block">Chưa có danh mục.</div>';
+        return;
+      }
+      const hien = danhSachDanhMuc.slice(0, 4);
+      luoiDanhMuc.innerHTML = hien
+        .map((dm) => {
+          const src = dm.hinhAnh ? duongDanTapTin(dm.hinhAnh) : `images/folio/${fileAnhDanhMuc(dm.name)}`;
+          return `
+            <button type="button" class="category-card" data-danh-muc="${chuoiAnToan(dm.id)}">
+              <img class="category-media" src="${chuoiAnToan(src)}" alt="${chuoiAnToan(dm.name)}" width="900" height="1200" loading="lazy" />
+              <h3>${chuoiAnToan(dm.name)}</h3>
+              <span class="category-more">Khám phá</span>
+            </button>`;
+        })
+        .join('');
+      luoiDanhMuc.querySelectorAll('[data-danh-muc]').forEach((nut) => {
+        nut.addEventListener('click', () => chonDanhMuc(nut.dataset.danhMuc));
+      });
+      veIcon();
+    }
+
+    function veChipDanhMuc() {
+      const khungChip = document.getElementById('chip-danh-muc');
+      if (!danhSachDanhMuc.length) {
+        khungChip.innerHTML = '';
+        return;
+      }
+      const chipTatCa = `
+        <button type="button" data-danh-muc="" class="chip chip-button ${boLoc.danhMucId === '' ? 'chip-primary' : 'chip-neutral'}">
+          <i data-lucide="tag"></i> Tất cả
+        </button>`;
+      const chipTung = danhSachDanhMuc
+        .map(
+          (dm) => `
+          <button type="button" data-danh-muc="${chuoiAnToan(dm.id)}"
+            class="chip chip-button ${boLoc.danhMucId === dm.id ? 'chip-primary' : 'chip-neutral'}">
+            ${chuoiAnToan(dm.name)}
+          </button>`,
+        )
+        .join('');
+      khungChip.innerHTML = chipTatCa + chipTung;
+      khungChip.querySelectorAll('button').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          boLoc.danhMucId = nut.dataset.danhMuc;
+          trangHienTai = 1;
+          document.getElementById('danh-muc').value = boLoc.danhMucId;
+          veChipDanhMuc();
+          taiDanhSachSanPham();
+        }),
+      );
+      veIcon();
+    }
+
+    function taoHtmlTheSanPham(sanPham, tuyChon = {}) {
+      const coGiamGia = Number(sanPham.discountPrice) > 0;
+      const giaHienThi = coGiamGia ? Number(sanPham.discountPrice) : Number(sanPham.price);
+      const tonKho = sanPham.inventory?.quantity ?? 0;
+      const hetHang = tonKho <= 0;
+      const phanTramGiam = coGiamGia
+        ? Math.round((1 - Number(sanPham.discountPrice) / Number(sanPham.price)) * 100)
+        : 0;
+      const anh = sanPham.images?.[0]
+        ? `<img src="${duongDanTapTin(sanPham.images[0])}" alt="${chuoiAnToan(sanPham.name)}" />`
+        : '<span class="product-thumb-empty">ẢNH</span>';
+
+      let badge = '';
+      if (phanTramGiam > 0) {
+        badge = `<span class="product-pill">-${phanTramGiam}%</span>`;
+      } else if (tuyChon.banChay) {
+        badge = '<span class="product-pill">Bán chạy</span>';
+      }
+
+      return `
+        <article class="product-card reveal">
+          <button type="button" class="product-wish" aria-label="Yêu thích">
+            <i data-lucide="heart"></i>
+          </button>
+          <a href="${duongDanTrang('product.html', { id: sanPham.id })}" class="product-card-link">
+            <div class="product-thumb">
+              ${anh}
+              ${badge}
+              ${hetHang ? '<span class="chip chip-danger product-badge-stock">Hết hàng</span>' : ''}
+            </div>
+            <div class="product-card-body">
+              <h3 class="product-card-name">${chuoiAnToan(sanPham.name)}</h3>
+              <div class="product-card-prices">
+                <span class="product-card-price">${dinhDangTien(giaHienThi)}</span>
+                ${coGiamGia ? `<span class="product-card-old-price">${dinhDangTien(sanPham.price)}</span>` : ''}
+              </div>
+              ${sanPham.category ? `<div class="product-size">${chuoiAnToan(sanPham.category.name)}</div>` : ''}
+            </div>
+          </a>
+          <div class="product-card-actions">
+            <a class="btn btn-outline" href="${duongDanTrang('product.html', { id: sanPham.id })}">Khắc tên</a>
+            <button type="button" class="btn btn-primary"
+              data-them-vao-gio="${chuoiAnToan(sanPham.id)}" ${hetHang ? 'disabled' : ''}>
+              ${hetHang ? 'Hết hàng' : 'Thêm vào giỏ'}
+            </button>
+          </div>
+        </article>`;
+    }
+
+    function veBangTieuBieu(danhSach) {
+      const khung = document.getElementById('bang-tieu-bieu');
+      if (!khung) return;
+      const hien = (danhSach || []).slice(0, 8);
+      if (!hien.length) {
+        khung.innerHTML = '<p class="empty-block">Chưa có sản phẩm.</p>';
+        return;
+      }
+      khung.innerHTML = hien.map((sp) => taoHtmlTheSanPham(sp)).join('');
+      ganSuKienThemVaoGio(khung);
+      veIcon();
+      ganHienKhiCuon(khung);
+    }
+
+    async function taiFlashSale() {
+      try {
+        const duLieu = await api.get('/products', { params: { page: 1, limit: 24 } });
+        const tatCa = duLieu.items || [];
+        veBangTieuBieu(tatCa);
+        const giamGia = tatCa.filter((sp) => Number(sp.discountPrice) > 0).slice(0, 6);
+        if (!giamGia.length) {
+          panelFlash.hidden = true;
+          return;
+        }
+        panelFlash.hidden = false;
+        luoiFlash.innerHTML = giamGia
+          .map((sp) => {
+            const gia = Number(sp.discountPrice) > 0 ? Number(sp.discountPrice) : Number(sp.price);
+            return `<span class="flash-item">${chuoiAnToan(sp.name)} · ${dinhDangTien(gia)}</span>`;
+          })
+          .join('');
+      } catch {
+        panelFlash.hidden = true;
+      }
+    }
+
+    async function taiGoiYTrangChu() {
+      try {
+        const duLieu = await api.get('/recommendations/home', { params: { limit: 8 } });
+        const items = duLieu.items || [];
+        if (!items.length) {
+          panelGoiY.hidden = true;
+          return;
+        }
+        const personalized = duLieu.strategy === 'personalized';
+        document.getElementById('goi-y-kicker').textContent = personalized
+          ? 'Dựa trên đơn hàng của bạn'
+          : 'Xu hướng mua sắm';
+        document.getElementById('goi-y-tieu-de').textContent =
+          duLieu.title || (personalized ? 'Gợi ý cho bạn' : 'Sản phẩm bán chạy');
+        panelGoiY.hidden = false;
+        luoiGoiY.innerHTML = items
+          .map((sp) => taoHtmlTheSanPham(sp, { banChay: !personalized }))
+          .join('');
+        ganSuKienThemVaoGio(luoiGoiY);
+        veIcon();
+        ganHienKhiCuon(luoiGoiY);
+      } catch {
+        panelGoiY.hidden = true;
+      }
+    }
+
+    function chayDemNguoc() {
+      const capNhat = () => {
+        const now = new Date();
+        const hetNgay = new Date(now);
+        hetNgay.setHours(23, 59, 59, 999);
+        let con = Math.max(0, Math.floor((hetNgay - now) / 1000));
+        const gio = Math.floor(con / 3600);
+        con %= 3600;
+        const phut = Math.floor(con / 60);
+        const giay = con % 60;
+        document.getElementById('cd-gio').textContent = String(gio).padStart(2, '0');
+        document.getElementById('cd-phut').textContent = String(phut).padStart(2, '0');
+        document.getElementById('cd-giay').textContent = String(giay).padStart(2, '0');
+      };
+      capNhat();
+      setInterval(capNhat, 1000);
+    }
+
+    async function taiDanhSachSanPham() {
+      khungSanPham.innerHTML = '<p class="loading-block">Đang tải...</p>';
+      khungPhanTrang.innerHTML = '';
+
+      const thamSo = { page: trangHienTai, limit: SO_SAN_PHAM_MOI_TRANG };
+      if (boLoc.tuKhoa) thamSo.search = boLoc.tuKhoa;
+      if (boLoc.danhMucId) thamSo.categoryId = boLoc.danhMucId;
+      if (boLoc.giaTu !== '') thamSo.minPrice = Number(boLoc.giaTu);
+      if (boLoc.giaDen !== '') thamSo.maxPrice = Number(boLoc.giaDen);
+
+      try {
+        const duLieu = await api.get('/products', { params: thamSo });
+        const danhSach = duLieu.items || [];
+        const tong = Number(duLieu.total) || 0;
+        oSoSanPham.textContent = tong ? `Tìm thấy ${tong} sản phẩm` : 'Không có sản phẩm phù hợp';
+
+        if (!danhSach.length) {
+          khungSanPham.innerHTML = '<div class="card empty-block">Không có sản phẩm phù hợp.</div>';
+          return;
+        }
+
+        khungSanPham.innerHTML = `<div class="product-grid">${danhSach
+          .map((sp, i) => taoHtmlTheSanPham(sp, { banChay: i < 2 && !Number(sp.discountPrice) }))
+          .join('')}</div>`;
+        trangHienTai = Number(duLieu.page) || trangHienTai;
+        vePhanTrang(duLieu);
+        ganSuKienThemVaoGio(khungSanPham);
+        veIcon();
+        ganHienKhiCuon(khungSanPham);
+      } catch {
+        oSoSanPham.textContent = 'Không lấy được số sản phẩm.';
+        khungSanPham.innerHTML = '<div class="card empty-block">Lỗi tải sản phẩm.</div>';
+      }
+    }
+
+    function ganSuKienThemVaoGio(goc) {
+      goc.querySelectorAll('[data-them-vao-gio]').forEach((nut) =>
+        nut.addEventListener('click', async (suKien) => {
+          suKien.preventDefault();
+          if (!taiKhoan.layNguoiDung()) {
+            thongBao.loi('Vui lòng đăng nhập');
+            return;
+          }
+          nut.disabled = true;
+          try {
+            await gioHang.them(nut.dataset.themVaoGio, 1);
+            thongBao.thanhCong('Đã thêm vào giỏ hàng');
+          } catch (loi) {
+            thongBao.loi(loi?.response?.data?.message || 'Lỗi khi thêm giỏ hàng');
+          } finally {
+            nut.disabled = false;
+          }
+        }),
+      );
+    }
+
+    function layCacSoTrang(trang, tongSoTrang) {
+      if (tongSoTrang <= 7) {
+        const ds = [];
+        for (let i = 1; i <= tongSoTrang; i += 1) ds.push(i);
+        return ds;
+      }
+      const ds = [1];
+      const batDau = Math.max(2, trang - 1);
+      const ketThuc = Math.min(tongSoTrang - 1, trang + 1);
+      if (batDau > 2) ds.push('ba-cham');
+      for (let i = batDau; i <= ketThuc; i += 1) ds.push(i);
+      if (ketThuc < tongSoTrang - 1) ds.push('ba-cham');
+      ds.push(tongSoTrang);
+      return ds;
+    }
+
+    function vePhanTrang(duLieu) {
+      const tongSoTrang = Number(duLieu.totalPages) || 0;
+      const tongSanPham = duLieu.total || 0;
+      if (tongSoTrang <= 1) {
+        khungPhanTrang.innerHTML = '';
+        return;
+      }
+      const nutSoTrang = layCacSoTrang(trangHienTai, tongSoTrang)
+        .map((muc) => {
+          if (muc === 'ba-cham') return '<span class="pagination-ellipsis" aria-hidden="true">…</span>';
+          const dangXem = muc === trangHienTai;
+          return `
+            <button type="button" class="pagination-btn ${dangXem ? 'active' : ''}" data-trang="${muc}"
+              ${dangXem ? 'aria-current="page"' : ''}>${muc}</button>`;
+        })
+        .join('');
+      khungPhanTrang.innerHTML = `
+        <p class="pagination-summary">${tongSanPham} sản phẩm · Trang ${trangHienTai}/${tongSoTrang}</p>
+        <div class="pagination-controls">
+          <button type="button" class="pagination-btn" data-trang="${trangHienTai - 1}"
+            ${trangHienTai <= 1 ? 'disabled' : ''} aria-label="Trang trước">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          ${nutSoTrang}
+          <button type="button" class="pagination-btn" data-trang="${trangHienTai + 1}"
+            ${trangHienTai >= tongSoTrang ? 'disabled' : ''} aria-label="Trang sau">
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>`;
+      khungPhanTrang.querySelectorAll('[data-trang]:not([disabled])').forEach((nut) =>
+        nut.addEventListener('click', async () => {
+          const trangMoi = Number(nut.dataset.trang);
+          if (trangMoi === trangHienTai) return;
+          trangHienTai = trangMoi;
+          await taiDanhSachSanPham();
+          khungSanPham.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }),
+      );
+      veIcon();
+    }
+
+    function apDungBoLoc() {
+      const ketQua = kiemTraForm(
+        [
+          { id: 'tu-khoa', label: 'Từ khóa', rules: ['maxLength:100'] },
+          { id: 'gia-tu', label: 'Giá từ', rules: ['number', 'min:0'] },
+          { id: 'gia-den', label: 'Giá đến', rules: ['number', 'min:0'] },
+        ],
+        hopBoLoc,
+        thongBao,
+      );
+      if (!ketQua) return;
+      const giaTu = ketQua.values['gia-tu'];
+      const giaDen = ketQua.values['gia-den'];
+      if (giaTu !== '' && giaDen !== '' && Number(giaTu) > Number(giaDen)) {
+        thongBao.loi('Giá từ không được lớn hơn giá đến');
+        return;
+      }
+      boLoc.tuKhoa = String(ketQua.values['tu-khoa']).trim();
+      boLoc.danhMucId = document.getElementById('danh-muc').value;
+      boLoc.giaTu = giaTu;
+      boLoc.giaDen = giaDen;
+      trangHienTai = 1;
+      veChipDanhMuc();
+      taiDanhSachSanPham();
+    }
+
+    function ganSuKienBoLoc() {
+      document.getElementById('nut-loc').addEventListener('click', apDungBoLoc);
+      document.getElementById('danh-muc').addEventListener('change', apDungBoLoc);
+      document.getElementById('tu-khoa').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') apDungBoLoc();
+      });
+      tuDongXoaLoi(hopBoLoc);
+    }
+
+    function ganFormB2B() {
+      document.getElementById('form-b2b').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const ten = document.getElementById('b2b-ten').value.trim();
+        const email = document.getElementById('b2b-email').value.trim();
+        const sdt = document.getElementById('b2b-sdt').value.trim();
+        if (!ten || !email || !sdt) {
+          thongBao.loi('Vui lòng điền họ tên, email và số điện thoại');
+          return;
+        }
+        thongBao.thanhCong('Đã ghi nhận yêu cầu. Chúng tôi sẽ liên hệ sớm.');
+        e.target.reset();
+      });
+    }
+
+    function ganCarousel() {
+      const track = document.getElementById('bang-tieu-bieu');
+      const giam = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const cuon = (huong) => {
+        if (!track) return;
+        track.scrollBy({
+          left: huong * Math.max(240, track.clientWidth * 0.8),
+          behavior: giam ? 'auto' : 'smooth',
+        });
+      };
+      document.getElementById('carousel-truoc')?.addEventListener('click', () => cuon(-1));
+      document.getElementById('carousel-sau')?.addEventListener('click', () => cuon(1));
+    }
+
+    async function khoiDong() {
+      dungKhungKhachHang('home');
+      const hero = document.getElementById('anh-hero');
+      const bannerLocal = 'images/folio/hero.webp';
+      const thuBanner = new Image();
+      thuBanner.onload = () => {
+        hero.src = bannerLocal;
+        hero.hidden = false;
+        document.getElementById('hero-fallback')?.setAttribute('hidden', '');
+      };
+      thuBanner.src = bannerLocal;
+
+      if (location.hash === '#tu-khoa') {
+        document.getElementById('tu-khoa')?.focus();
+      }
+
+      await taiDanhMuc();
+      dienSelectDanhMuc();
+      veLuoiDanhMuc();
+      veChipDanhMuc();
+      ganSuKienBoLoc();
+      ganFormB2B();
+      ganCarousel();
+      chayDemNguoc();
+      await Promise.all([taiFlashSale(), taiGoiYTrangChu(), taiDanhSachSanPham()]);
+      ganHienKhiCuon();
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

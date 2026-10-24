@@ -3,16 +3,266 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tài khoản - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Tài khoản của tôi - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang tài khoản -->
+  <style>
+    /* Cả trang gói trong 1 cột hẹp cho dễ đọc */
+    .profile-page {
+      max-width: 42rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Thẻ đầu trang: avatar to + tên + email + vai trò */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .profile-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .profile-email {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+    }
+    .profile-email .lucide {
+      width: 0.875rem;
+      height: 0.875rem;
+    }
+    .profile-role {
+      margin-top: 0.25rem;
+    }
+
+    .profile-form-title {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <div class="profile-page">
+        <!-- Thông tin hiển thị nhanh -->
+        <section class="card card-elevated profile-header">
+          <div class="avatar avatar-large" id="chu-cai-dau">U</div>
+          <div>
+            <h1 class="profile-name" id="ten-nguoi-dung"></h1>
+            <p class="profile-email"><i data-lucide="mail"></i> <span id="email-nguoi-dung"></span></p>
+            <span class="chip chip-info profile-role" id="vai-tro">Khách hàng</span>
+          </div>
+        </section>
+
+        <!-- Form 1: sửa thông tin cá nhân -->
+        <form id="form-thong-tin" class="card form-stack">
+          <h2 class="profile-form-title">Thông tin cá nhân</h2>
+
+          <div class="form-field">
+            <label class="form-label" for="fullName">Họ và tên</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="user" class="input-icon"></i>
+              <input id="fullName" class="form-input form-input-with-icon" required />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="phone">Số điện thoại</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="phone" class="input-icon"></i>
+              <input id="phone" class="form-input form-input-with-icon" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="address">Địa chỉ</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="map-pin" class="input-icon"></i>
+              <input id="address" class="form-input form-input-with-icon" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="nut-luu-thong-tin" class="btn btn-primary">
+              <i data-lucide="save"></i> Lưu thay đổi
+            </button>
+          </div>
+        </form>
+
+        <!-- Form 2: đổi mật khẩu -->
+        <form id="form-mat-khau" class="card form-stack">
+          <h2 class="profile-form-title block-title"><i data-lucide="key-round"></i> Đổi mật khẩu</h2>
+
+          <div class="form-field">
+            <label class="form-label" for="currentPassword">Mật khẩu hiện tại</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input id="currentPassword" class="form-input form-input-with-icon form-input-with-toggle" type="password" required />
+              <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="newPassword">Mật khẩu mới</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input id="newPassword" class="form-input form-input-with-icon form-input-with-toggle" type="password" minlength="6" required />
+              <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="confirm">Xác nhận mật khẩu mới</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input id="confirm" class="form-input form-input-with-icon form-input-with-toggle" type="password" minlength="6" required />
+              <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="nut-doi-mat-khau" class="btn btn-primary">
+              <i data-lucide="key-round"></i> Đổi mật khẩu
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/profile.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { taiKhoan } from './js/auth.js';
+    import { thongBao } from './js/toast.js';
+    import { dungKhungKhachHang, veIcon, batBuocDangNhap } from './js/layout.js';
+    import { tuDongXoaLoi, kiemTraForm } from './js/validate.js';
+
+    const formThongTin = document.getElementById('form-thong-tin');
+    const formMatKhau = document.getElementById('form-mat-khau');
+
+    /** Điền tên / email / vai trò lên thẻ đầu trang (textContent nên an toàn XSS) */
+    function hienThongTinNguoiDung(nguoiDung) {
+      document.getElementById('chu-cai-dau').textContent = (nguoiDung?.fullName || 'U').charAt(0).toUpperCase();
+      document.getElementById('ten-nguoi-dung').textContent = nguoiDung?.fullName || '';
+      document.getElementById('email-nguoi-dung').textContent = nguoiDung?.email || '';
+      document.getElementById('vai-tro').textContent = nguoiDung?.role === 'ADMIN' ? 'Quản trị viên' : 'Khách hàng';
+    }
+
+    /** Điền dữ liệu profile từ API vào form thông tin cá nhân */
+    function dienFormThongTin(profile) {
+      document.getElementById('fullName').value = profile.fullName || '';
+      document.getElementById('phone').value = profile.phone || '';
+      document.getElementById('address').value = profile.address || '';
+    }
+
+    /** Kiểm tra form rồi gọi API cập nhật thông tin cá nhân */
+    async function xuLyLuuThongTin(suKien) {
+      suKien.preventDefault();
+
+      const ketQua = kiemTraForm(
+        [
+          { id: 'fullName', label: 'Họ và tên', rules: ['required', 'minLength:2', 'maxLength:100'] },
+          { id: 'phone', label: 'Số điện thoại', rules: ['phone'] },
+          { id: 'address', label: 'Địa chỉ', rules: ['maxLength:255'] },
+        ],
+        formThongTin,
+        thongBao,
+      );
+      if (!ketQua) return;
+
+      const nut = document.getElementById('nut-luu-thong-tin');
+      nut.disabled = true;
+      try {
+        // Gọi API cập nhật, sau đó lưu lại vào phiên để header hiện tên mới
+        const duLieu = await api.patch('/users/me', {
+          fullName: ketQua.values.fullName.trim(),
+          phone: String(ketQua.values.phone || '').trim() || undefined,
+          address: String(ketQua.values.address || '').trim() || undefined,
+        });
+        taiKhoan.luuNguoiDung(duLieu);
+        hienThongTinNguoiDung(duLieu);
+        thongBao.thanhCong('Đã cập nhật thông tin');
+        dungKhungKhachHang('');
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không lưu được thông tin');
+      } finally {
+        nut.disabled = false;
+      }
+    }
+
+    /** Kiểm tra form rồi gọi API đổi mật khẩu */
+    async function xuLyDoiMatKhau(suKien) {
+      suKien.preventDefault();
+
+      // Validate: mật khẩu mới ≥ 6 ký tự và ô xác nhận phải khớp
+      const ketQua = kiemTraForm(
+        [
+          { id: 'currentPassword', label: 'Mật khẩu hiện tại', rules: ['required'] },
+          { id: 'newPassword', label: 'Mật khẩu mới', rules: ['required', 'minLength:6', 'maxLength:64'] },
+          { id: 'confirm', label: 'Xác nhận mật khẩu', rules: ['required', 'match:newPassword'] },
+        ],
+        formMatKhau,
+        thongBao,
+      );
+      if (!ketQua) return;
+
+      const nut = document.getElementById('nut-doi-mat-khau');
+      nut.disabled = true;
+      try {
+        const duLieu = await api.post('/auth/change-password', {
+          currentPassword: ketQua.values.currentPassword,
+          newPassword: ketQua.values.newPassword,
+        });
+        thongBao.thanhCong(duLieu.message);
+        formMatKhau.reset();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Đổi mật khẩu thất bại');
+      } finally {
+        nut.disabled = false;
+      }
+    }
+
+    /** Khởi động trang: lấy thông tin tài khoản từ API và điền vào form */
+    async function khoiDong() {
+      if (!batBuocDangNhap()) return;
+      dungKhungKhachHang('');
+
+      hienThongTinNguoiDung(taiKhoan.layNguoiDung());
+      tuDongXoaLoi(formThongTin);
+      tuDongXoaLoi(formMatKhau);
+      formThongTin.addEventListener('submit', xuLyLuuThongTin);
+      formMatKhau.addEventListener('submit', xuLyDoiMatKhau);
+
+      try {
+        dienFormThongTin(await api.get('/users/me'));
+      } catch {
+        thongBao.loi('Không tải được thông tin tài khoản');
+      }
+
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

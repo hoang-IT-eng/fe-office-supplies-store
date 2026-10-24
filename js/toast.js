@@ -1,29 +1,31 @@
-// Toast đơn giản thay cho react-hot-toast.
-function ensureRoot() {
-  let root = document.getElementById('toast-root');
-  if (!root) {
-    root = document.createElement('div');
-    root.id = 'toast-root';
-    document.body.appendChild(root);
+import { chuoiAnToan } from './format.js';
+
+/** Tạo (nếu chưa có) khung chứa các thông báo ở góc phải trên */
+function layKhungThongBao() {
+  let khung = document.getElementById('toast-root');
+  if (!khung) {
+    khung = document.createElement('div');
+    khung.id = 'toast-root';
+    document.body.appendChild(khung);
   }
-  return root;
+  return khung;
 }
 
-function show(message, type = 'info', duration = 3000, icon = '') {
-  const root = ensureRoot();
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = `${icon ? `<span>${icon}</span>` : ''}<span>${message}</span>`;
-  root.appendChild(el);
+/** Hiện 1 thông báo rồi tự ẩn sau `thoiGian` mili giây */
+function hien(noiDung, loai = 'info', thoiGian = 3000) {
+  const khung = layKhungThongBao();
+  const the = document.createElement('div');
+  the.className = `toast toast-${loai}`;
+  the.innerHTML = `<span>${chuoiAnToan(noiDung)}</span>`;
+  khung.appendChild(the);
   setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transition = 'opacity .2s';
-    setTimeout(() => el.remove(), 200);
-  }, duration);
+    the.classList.add('toast-dang-an');
+    setTimeout(() => the.remove(), 200);
+  }, thoiGian);
 }
 
-export const toast = {
-  success: (m, d) => show(m, 'success', d),
-  error: (m, d) => show(m, 'error', d),
-  info: (m, d, icon) => show(m, 'info', d, icon),
+export const thongBao = {
+  thanhCong: (noiDung, thoiGian) => hien(noiDung, 'success', thoiGian),
+  loi: (noiDung, thoiGian) => hien(noiDung, 'error', thoiGian),
+  tin: (noiDung, thoiGian) => hien(noiDung, 'info', thoiGian),
 };

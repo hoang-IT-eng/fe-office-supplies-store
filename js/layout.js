@@ -1,239 +1,490 @@
-import { auth } from './auth.js';
+/**
+ * Dựng phần "khung" lặp lại ở mọi trang:
+ *  - Khách hàng: header (logo + menu + giỏ hàng) và footer
+ *  - Admin: thanh menu (vị trí trái/trên do css/admin.css quyết định)
+ * Ngoài ra có 2 hàm chặn truy cập: batBuocDangNhap() và batBuocAdmin().
+ */
+
+import { taiKhoan } from './auth.js';
+import { ganHopThoai } from './chat-widget.js';
 import { api } from './api.js';
-import { cart } from './cart.js';
-import { fileUrl } from './config.js';
-import { toast } from './toast.js';
+import { gioHang } from './cart.js';
+import { duongDanTapTin, duongDanTrang } from './config.js';
+import { chuoiAnToan } from './format.js';
 
-const icons = () => window.lucide && window.lucide.createIcons();
-const LOGO_URL = fileUrl('/uploads/image.png');
+const URL_LOGO = duongDanTapTin('/uploads/image.png');
 
-function ensureFavicon() {
-  let link = document.querySelector("link[rel='icon']");
-  if (!link) {
-    link = document.createElement('link');
-    link.rel = 'icon';
-    link.type = 'image/png';
-    document.head.appendChild(link);
-  }
-  link.href = LOGO_URL;
+/** Đổi mọi thẻ <i data-lucide="..."> thành icon SVG (gọi lại sau khi render HTML mới) */
+export function veIcon() {
+  if (window.lucide) window.lucide.createIcons();
 }
 
-// ---- Guards ----
-export function requireAuth() {
-  if (!auth.getUser()) {
-    const next = encodeURIComponent(location.pathname.split('/').pop() + location.search);
-    location.replace(`login?next=${next}`);
+/** Gắn nút con mắt để hiện/ẩn mật khẩu cho mọi ô [data-password-toggle] */
+export function ganNutHienMatKhau() {
+  document.querySelectorAll('[data-password-toggle]').forEach((nut) => {
+    if (nut.dataset.daGanHienMatKhau) return;
+    nut.dataset.daGanHienMatKhau = '1';
+
+    nut.addEventListener('click', () => {
+      const oNhap = nut.closest('.input-icon-wrap')?.querySelector('input');
+      if (!oNhap) return;
+
+      const dangAn = oNhap.type === 'password';
+      oNhap.type = dangAn ? 'text' : 'password';
+      const nhan = dangAn ? 'Ẩn mật khẩu' : 'Hiện mật khẩu';
+      nut.setAttribute('aria-label', nhan);
+      nut.setAttribute('title', nhan);
+      nut.innerHTML = `<i data-lucide="${dangAn ? 'eye-off' : 'eye'}"></i>`;
+      veIcon();
+    });
+  });
+}
+
+/** Gắn favicon là logo shop */
+function ganFavicon() {
+  let the = document.querySelector("link[rel='icon']");
+  if (!the) {
+    the = document.createElement('link');
+    the.rel = 'icon';
+    the.type = 'image/png';
+    document.head.appendChild(the);
+  }
+  the.href = URL_LOGO;
+}
+
+// ---------------------------------------------------------------- Chặn truy cập
+
+/** Trang chỉ dành cho người đã đăng nhập; chưa đăng nhập → về trang login */
+export function batBuocDangNhap() {
+  if (!taiKhoan.layNguoiDung()) {
+    const trangDangMo = location.pathname.split('/').pop() + location.search;
+    location.replace(duongDanTrang('login.html', { next: trangDangMo }));
     return false;
   }
   return true;
 }
 
-export function requireAdmin() {
-  const user = auth.getUser();
-  if (!user) {
+/** Trang chỉ dành cho ADMIN; khách thường → về trang chủ */
+export function batBuocAdmin() {
+  const nguoiDung = taiKhoan.layNguoiDung();
+  if (!nguoiDung) {
     location.replace('../login.html');
     return false;
   }
-  if (user.role !== 'ADMIN') {
+  if (nguoiDung.role !== 'ADMIN') {
     location.replace('../index.html');
     return false;
   }
   return true;
 }
 
-async function doLogout(homeHref) {
+/** Gọi API đăng xuất, xóa phiên rồi về trang chủ */
+async function xuLyDangXuat(duongDanTrangChu) {
   try {
     await api.post('/auth/logout');
   } catch {
-    /* ignore */
+    /* API lỗi vẫn xóa phiên phía trình duyệt */
   }
-  auth.logout();
-  location.href = homeHref;
+  taiKhoan.dangXuat();
+  location.href = duongDanTrangChu;
 }
 
-// ---- Customer chrome ----
-export function mountCustomerChrome(active) {
-  const user = auth.getUser();
+// ------------------------------------------------------- Khung trang khách hàng
+
+/**
+ * Dựng header + footer cho trang khách hàng.
+ * @param {string} trangHienTai khóa để tô sáng menu: 'home' | 'orders' | 'cart' | ''
+ */
+export function dungKhungKhachHang(trangHienTai) {
+  const nguoiDung = taiKhoan.layNguoiDung();
   const header = document.getElementById('site-header');
   const footer = document.getElementById('site-footer');
-  const year = new Date().getFullYear();
+  const nam = new Date().getFullYear();
+  const anThongBao = localStorage.getItem('fq-an-thong-bao') === '1';
 
-  const link = (href, label, key, extra = '') =>
-    `<a href="${href}" class="nav-link ${active === key ? 'active' : ''}">${extra}${label}</a>`;
+  ganFavicon();
 
-  ensureFavicon();
+  const lienKet = (href, nhan) =>
+    `<a href="${href}" class="nav-link ${trangHienTai === 'home' && href.endsWith('#bo-suu-tap') ? '' : ''}">${nhan}</a>`;
+
+  const menuTaiKhoan = nguoiDung
+    ? `<a href="profile.html">Tài khoản</a>
+       <a href="orders.html">Đơn hàng</a>
+       ${taiKhoan.laAdmin() ? '<a href="admin/dashboard.html">Quản trị</a>' : ''}
+       <button type="button" id="nut-dang-xuat">Đăng xuất</button>`
+    : `<a href="login.html">Đăng nhập</a>
+       <a href="register.html">Đăng ký</a>`;
 
   header.innerHTML = `
-    <div class="header-inner">
-      <a href="index.html" class="brand">
-        <img src="${LOGO_URL}" alt="" class="brand-logo" />
-        <span>Văn phòng phẩm <span class="accent">Trần Huy Hoàng</span></span>
-      </a>
-
-      <!-- Nút 3 gạch: CSS chỉ cho hiện khi màn hình nhỏ (điện thoại, tablet) -->
+    ${
+      anThongBao
+        ? ''
+        : `<div class="fq-announce" id="thanh-thong-bao">
+            <p>Miễn phí khắc tên cho mọi sổ tay</p>
+            <button type="button" class="fq-announce-close" id="dong-thong-bao" aria-label="Đóng thông báo">×</button>
+          </div>`
+    }
+    <div class="fq-scrim" id="fq-scrim"></div>
+    <div class="fq-logo-row">
       <button
         type="button"
         class="nav-toggle"
-        id="nav-toggle"
+        id="nut-menu"
         title="Menu"
         aria-label="Mở menu"
         aria-expanded="false"
         aria-controls="main-nav"
       >
-        <i data-lucide="menu" class="nav-toggle-icon"></i>
+        <i data-lucide="menu"></i>
       </button>
-
-      <nav class="main-nav" id="main-nav">
-        ${link('index.html', 'Sản phẩm', 'home')}
-        ${user ? link('orders.html', 'Đơn hàng', 'orders', '<i data-lucide="package" class="nav-link-icon"></i> ') : ''}
-        <a href="cart.html" class="cart-link" title="Giỏ hàng">
-          <i data-lucide="shopping-cart" class="cart-icon"></i>
+      <a href="index.html" class="fq-logo">
+        <span class="fq-logo-est">Est. 2018</span>
+        <span class="fq-logo-name">Folio &amp; Quill</span>
+        <span class="fq-logo-city">Saigon</span>
+      </a>
+      <div class="fq-tools">
+        <button type="button" class="fq-tool" id="nut-tim" aria-label="Tìm kiếm">
+          <i data-lucide="search"></i>
+        </button>
+        <button type="button" class="fq-tool" id="nut-yeu-thich" aria-label="Yêu thích">
+          <i data-lucide="heart"></i>
+        </button>
+        <div class="fq-account">
+          <button type="button" class="fq-tool" id="nut-tai-khoan" aria-label="Tài khoản" aria-expanded="false" aria-controls="menu-tai-khoan">
+            <i data-lucide="user"></i>
+          </button>
+          <div class="fq-account-menu" id="menu-tai-khoan" hidden>
+            ${menuTaiKhoan}
+          </div>
+        </div>
+        <a href="cart.html" class="cart-link fq-tool ${trangHienTai === 'cart' ? 'active' : ''}" title="Giỏ hàng">
+          <i data-lucide="shopping-bag"></i>
           <span class="cart-link-text">Giỏ hàng</span>
-          <span class="cart-badge" id="cart-badge" style="display:none">0</span>
+          <span class="cart-badge" id="so-luong-gio-hang" hidden>0</span>
         </a>
-        ${auth.isAdmin() ? '<a href="admin/products.html" class="chip chip-secondary admin-link"><i data-lucide="shield-check" class="admin-link-icon"></i> Admin</a>' : ''}
-        ${
-          user
-            ? `<div class="user-menu">
-                 <a href="profile.html" class="user-menu-link">
-                   <span class="avatar">${(user.fullName || 'U').charAt(0).toUpperCase()}</span>
-                   <span class="user-menu-name">${user.fullName || ''}</span>
-                 </a>
-                 <button class="icon-btn" id="logout-btn" title="Đăng xuất"><i data-lucide="log-out" class="logout-icon"></i></button>
-               </div>`
-            : `<div class="header-auth-actions">
-                 <a href="login.html" class="btn btn-outline">Đăng nhập</a>
-                 <a href="register.html" class="btn btn-primary">Đăng ký</a>
-               </div>`
-        }
-      </nav>
-    </div>`;
+      </div>
+    </div>
+    <nav class="main-nav" id="main-nav" aria-label="Danh mục">
+      <div class="fq-has-mega">
+        <a href="index.html#bo-suu-tap" class="nav-link">Bộ sưu tập</a>
+        <div class="fq-mega">
+          <div class="fq-mega-col">
+            <h3>Sổ tay</h3>
+            <a href="index.html#muc-danh-muc">Sổ da</a>
+            <a href="index.html#muc-danh-muc">Sổ kẻ ô</a>
+            <a href="index.html#muc-danh-muc">Sổ bìa cứng</a>
+          </div>
+          <div class="fq-mega-col">
+            <h3>Bút ký</h3>
+            <a href="index.html#muc-danh-muc">Bút máy</a>
+            <a href="index.html#muc-danh-muc">Bút bi</a>
+            <a href="index.html#muc-danh-muc">Mực viết</a>
+          </div>
+          <div class="fq-mega-col">
+            <h3>Quà tặng</h3>
+            <a href="index.html#muc-danh-muc">Bộ quà</a>
+            <a href="index.html#b2b-form-section">In logo</a>
+            <a href="index.html#cau-chuyen">Gói quà</a>
+          </div>
+          <div class="fq-mega-col fq-mega-feature">
+            <h3>Bộ sưu tập 2027</h3>
+            <a href="index.html#bo-suu-tap">Khám phá</a>
+          </div>
+        </div>
+      </div>
+      ${lienKet('index.html#san-pham-tieu-bieu', 'Mới về')}
+      ${lienKet('index.html#muc-danh-muc', 'Sổ tay')}
+      ${lienKet('index.html#muc-danh-muc', 'Bút ký')}
+      ${lienKet('index.html#muc-danh-muc', 'Đồ dùng bàn')}
+      ${lienKet('index.html#muc-danh-muc', 'Quà tặng')}
+      ${lienKet('index.html#b2b-form-section', 'Doanh nghiệp')}
+      ${lienKet('index.html#cau-chuyen', 'Câu chuyện')}
+    </nav>`;
 
   footer.innerHTML = `
-    <div class="footer-grid">
-      <div>
-        <div class="flex items-center gap-2 font-extrabold text-primary text-lg mb-2">
-          <img src="${LOGO_URL}" alt="" class="brand-logo brand-logo-sm" /> Văn phòng phẩm Trần Huy Hoàng
-        </div>
-        <p class="muted">Hệ thống thương mại điện tử chuyên về văn phòng phẩm — hiện đại, đáng tin cậy.</p>
+    <form class="footer-news" id="form-nhan-tin">
+      <h2 class="footer-heading">Đăng ký nhận tin</h2>
+      <div class="footer-news-row">
+        <label class="visually-hidden" for="email-nhan-tin">Email</label>
+        <input id="email-nhan-tin" type="email" name="email" placeholder="Email" required autocomplete="email" />
+        <button type="submit">Gửi</button>
       </div>
-      <div>
-        <h4 class="font-semibold mb-3">Liên kết</h4>
-        <ul class="space-y-2 muted">
-          <li><a href="index.html">Sản phẩm</a></li>
-          <li><a href="orders.html">Đơn hàng</a></li>
-          <li><a href="profile.html">Tài khoản</a></li>
+      <p class="footer-news-note" id="nhan-tin-trang-thai"></p>
+    </form>
+    <div class="footer-grid">
+      <div class="footer-column">
+        <div class="footer-brand">Folio &amp; Quill</div>
+        <p class="muted">Sổ tay, bút ký và đồ dùng bàn, làm tại Sài Gòn.</p>
+      </div>
+      <div class="footer-column">
+        <h2 class="footer-heading">Cửa hàng</h2>
+        <ul class="footer-links">
+          <li><a href="index.html#san-pham-tieu-bieu">Sản phẩm</a></li>
+          <li><a href="index.html#bo-suu-tap">Bộ sưu tập</a></li>
+          <li><a href="index.html#b2b-form-section">Doanh nghiệp</a></li>
         </ul>
       </div>
-      <div>
-        <h4 class="font-semibold mb-3">Liên hệ</h4>
-        <ul class="space-y-2 muted">
-          <li>Email: support@stationery.local</li>
-          <li>Hotline: 1900-xxxx</li>
+      <div class="footer-column">
+        <h2 class="footer-heading">Tài khoản</h2>
+        <ul class="footer-links">
+          <li><a href="login.html">Đăng nhập</a></li>
+          <li><a href="orders.html">Đơn hàng</a></li>
+          <li><a href="profile.html">Tài khoản</a></li>
+          <li>Email: hello@folioquill.saigon</li>
         </ul>
       </div>
     </div>
-    <div class="footer-copy">© ${year} Văn phòng phẩm Trần Huy Hoàng</div>`;
+    <div class="footer-social">
+      <a href="index.html#cau-chuyen" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+      <a href="index.html#cau-chuyen" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+    </div>
+    <div class="footer-copy">© ${nam} Folio &amp; Quill. Sài Gòn.</div>`;
 
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) logoutBtn.addEventListener('click', () => doLogout('index.html'));
+  document.getElementById('nut-dang-xuat')?.addEventListener('click', () => xuLyDangXuat('index.html'));
+  document.getElementById('dong-thong-bao')?.addEventListener('click', () => {
+    localStorage.setItem('fq-an-thong-bao', '1');
+    const thanh = document.getElementById('thanh-thong-bao');
+    if (thanh) thanh.hidden = true;
+  });
+  document.getElementById('nut-tim')?.addEventListener('click', () => {
+    const oTim = document.getElementById('tu-khoa');
+    if (oTim) {
+      oTim.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      oTim.focus();
+      return;
+    }
+    location.href = 'index.html#tu-khoa';
+  });
+  const nutTaiKhoan = document.getElementById('nut-tai-khoan');
+  const menuTaiKhoanEl = document.getElementById('menu-tai-khoan');
+  nutTaiKhoan?.addEventListener('click', () => {
+    const dangMo = menuTaiKhoanEl.hasAttribute('hidden');
+    if (dangMo) menuTaiKhoanEl.removeAttribute('hidden');
+    else menuTaiKhoanEl.hidden = true;
+    nutTaiKhoan.setAttribute('aria-expanded', dangMo ? 'true' : 'false');
+  });
+  document.getElementById('form-nhan-tin')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const oEmail = document.getElementById('email-nhan-tin');
+    const trangThai = document.getElementById('nhan-tin-trang-thai');
+    if (!oEmail?.value.trim()) return;
+    if (trangThai) trangThai.textContent = 'Đã ghi nhận email.';
+    oEmail.value = '';
+  });
 
-  // Bấm nút 3 gạch → thêm/bỏ class "open" để hiện/ẩn menu trên điện thoại
-  const navToggle = document.getElementById('nav-toggle');
-  const mainNav = document.getElementById('main-nav');
-  if (navToggle && mainNav) {
-    navToggle.addEventListener('click', () => {
-      const opened = mainNav.classList.toggle('open');
-      navToggle.setAttribute('aria-expanded', opened ? 'true' : 'false');
-      navToggle.setAttribute('aria-label', opened ? 'Đóng menu' : 'Mở menu');
-      navToggle.innerHTML = `<i data-lucide="${opened ? 'x' : 'menu'}" class="nav-toggle-icon"></i>`;
-      icons();
+  ganSuKienNutMenu();
+  ganCuonHeader();
+  theoDoiSoLuongGioHang(Boolean(nguoiDung));
+  ganNutHienMatKhau();
+  ganHopThoai();
+  veIcon();
+  ganHienKhiCuon();
+}
+
+/** Bấm nút 3 gạch → thêm/bỏ class "open" để hiện/ẩn menu trên điện thoại */
+function ganSuKienNutMenu() {
+  const nutMenu = document.getElementById('nut-menu');
+  const menu = document.getElementById('main-nav');
+  const header = document.getElementById('site-header');
+  if (!nutMenu || !menu) return;
+
+  const datTrangThai = (mo) => {
+    menu.classList.toggle('open', mo);
+    header?.classList.toggle('menu-mo', mo);
+    nutMenu.setAttribute('aria-expanded', mo ? 'true' : 'false');
+    nutMenu.setAttribute('aria-label', mo ? 'Đóng menu' : 'Mở menu');
+    nutMenu.innerHTML = `<i data-lucide="${mo ? 'x' : 'menu'}"></i>`;
+    veIcon();
+  };
+
+  nutMenu.addEventListener('click', () => datTrangThai(!menu.classList.contains('open')));
+  menu.querySelectorAll('a').forEach((the) => the.addEventListener('click', () => datTrangThai(false)));
+  document.getElementById('fq-scrim')?.addEventListener('click', () => datTrangThai(false));
+}
+
+function ganCuonHeader() {
+  const header = document.getElementById('site-header');
+  if (!header) return;
+  const capNhat = () => header.classList.toggle('header-rut', window.scrollY > 40);
+  capNhat();
+  window.addEventListener('scroll', capNhat, { passive: true });
+}
+
+/** Ảnh và khối .reveal hiện dần khi cuộn tới */
+export function ganHienKhiCuon(goc = document) {
+  const ds = [...goc.querySelectorAll('.reveal:not([data-da-quan-sat])')];
+  if (!ds.length) return;
+  const giamChuyenDong = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (giamChuyenDong || !('IntersectionObserver' in window)) {
+    ds.forEach((el) => {
+      el.classList.add('hien');
+      el.dataset.daQuanSat = '1';
+    });
+    return;
+  }
+  const quanSat = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('hien');
+        quanSat.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.15 },
+  );
+  ds.forEach((el) => {
+    el.dataset.daQuanSat = '1';
+    quanSat.observe(el);
+  });
+}
+
+/** Cập nhật con số nhỏ trên icon giỏ hàng mỗi khi giỏ đổi */
+function theoDoiSoLuongGioHang(daDangNhap) {
+  const capNhatBadge = () => {
+    const badge = document.getElementById('so-luong-gio-hang');
+    if (!badge) return;
+    const soLuong = gioHang.demSoLuong();
+    badge.textContent = soLuong;
+    badge.hidden = soLuong === 0;
+  };
+
+  gioHang.theoDoi(capNhatBadge);
+  if (daDangNhap) gioHang.tai().then(capNhatBadge).catch(() => {});
+}
+
+// ------------------------------------------------------------- Khung trang admin
+//
+// Thanh menu admin: HTML được dựng ở đây, VỊ TRÍ do CSS quyết định.
+// Xem chú thích đầu file frontend/css/admin.css
+//
+// Hiện tại: thanh dọc BÊN TRÁI (#admin-aside trong mỗi admin/*.html)
+// - Giữ / lật sang TRÁI: không đổi file này (đã là trái). Kiểm tra admin.css: left: 0
+// - Đưa LÊN TRÊN: chủ yếu sửa admin.css (.admin-aside thành hàng ngang).
+//   HTML bên dưới (logo → menu → user) giữ nguyên, CSS flex-direction: row sẽ xếp 1 hàng.
+
+// Menu admin — tên + icon Material Symbols y như Stitch
+const MENU_ADMIN = [
+  { duongDan: 'dashboard.html', nhan: 'Dashboard', icon: 'dashboard', khoa: 'dashboard' },
+  { duongDan: 'products.html', nhan: 'Sản phẩm', icon: 'inventory_2', khoa: 'products' },
+  { duongDan: 'categories.html', nhan: 'Danh mục', icon: 'category', khoa: 'categories' },
+  { duongDan: 'inventory.html', nhan: 'Tồn kho', icon: 'warehouse', khoa: 'inventory' },
+  { duongDan: 'orders.html', nhan: 'Đơn hàng', icon: 'shopping_cart_checkout', khoa: 'orders' },
+  { duongDan: 'users.html', nhan: 'Người dùng', icon: 'group', khoa: 'users' },
+  { duongDan: 'vouchers.html', nhan: 'Voucher & Khuyến mãi', icon: 'confirmation_number', khoa: 'vouchers' },
+  { duongDan: 'reviews.html', nhan: 'Đánh giá & Phản hồi', icon: 'rate_review', khoa: 'reviews' },
+];
+
+function damBaoMaterialSymbols() {
+  if (document.getElementById('material-symbols-admin')) return;
+  const link = document.createElement('link');
+  link.id = 'material-symbols-admin';
+  link.rel = 'stylesheet';
+  link.href =
+    'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap';
+  document.head.appendChild(link);
+}
+
+/**
+ * Dựng sidebar + topbar admin giống Stitch.
+ * @param {string} trangHienTai khóa mục menu đang mở (xem MENU_ADMIN)
+ */
+export function dungKhungAdmin(trangHienTai) {
+  const nguoiDung = taiKhoan.layNguoiDung();
+  const sidebar = document.getElementById('admin-aside');
+  const ten = nguoiDung?.fullName || 'Trần Huy Hoàng';
+
+  ganFavicon();
+  damBaoMaterialSymbols();
+  damBaoKhungAdminMain();
+
+  const cacMucMenu = MENU_ADMIN.map(
+    (muc) => `
+      <a href="${muc.duongDan}" class="nav-item ${trangHienTai === muc.khoa ? 'active' : ''}"
+        ${trangHienTai === muc.khoa ? 'aria-current="page"' : ''}>
+        <span class="ms material-symbols-outlined">${muc.icon}</span>
+        <span>${muc.nhan}</span>
+      </a>`,
+  ).join('');
+
+  sidebar.innerHTML = `
+    <div class="admin-aside-inner">
+      <div class="admin-brand-bar">
+        <a href="dashboard.html" class="admin-brand">
+          <img src="${URL_LOGO}" alt="Logo Văn phòng phẩm Trần Huy Hoàng" class="brand-logo" />
+          <div>
+            <div class="admin-brand-name">Trần Huy Hoàng</div>
+            <div class="admin-brand-sub">Admin Portal</div>
+          </div>
+        </a>
+        <button type="button" class="admin-brand-toggle" title="Thu gọn / Mở rộng" aria-label="Thu gọn menu">
+          <span class="ms material-symbols-outlined">menu_open</span>
+        </button>
+      </div>
+      <div class="admin-nav-label">Hệ thống quản trị</div>
+      <nav class="admin-nav">${cacMucMenu}</nav>
+      <div class="admin-aside-footer">
+        <div class="admin-system-row">
+          <div class="admin-system-left">
+            <span class="ms material-symbols-outlined">cloud_done</span>
+            <span>Hệ thống online</span>
+          </div>
+          <span class="admin-system-ver">v2.4.0</span>
+        </div>
+      </div>
+    </div>`;
+
+  const topbar = document.getElementById('admin-topbar');
+  if (topbar) {
+    topbar.innerHTML = `
+      <div class="admin-topbar-search">
+        <span class="ms material-symbols-outlined">search</span>
+        <input type="search" placeholder="Tìm kiếm mã hàng, đơn đặt, khách hàng..."
+          aria-label="Tìm kiếm nhanh" id="tim-nhanh-admin" />
+      </div>
+      <div class="admin-topbar-right">
+        <button type="button" class="admin-bell" aria-label="Thông báo">
+          <span class="ms material-symbols-outlined">notifications</span>
+          <span class="admin-bell-badge">5</span>
+        </button>
+        <div class="admin-topbar-user">
+          <div class="admin-topbar-meta">
+            <strong>${chuoiAnToan(ten)}</strong>
+            <span>Super Admin</span>
+          </div>
+          <div class="admin-topbar-avatar" aria-hidden="true">
+            <span class="ms material-symbols-outlined">person</span>
+          </div>
+        </div>
+        <button type="button" class="admin-logout-link" id="nut-dang-xuat-topbar">
+          <span class="ms material-symbols-outlined">logout</span>
+          <span>Đăng xuất</span>
+        </button>
+      </div>`;
+    document.getElementById('nut-dang-xuat-topbar')?.addEventListener('click', () => xuLyDangXuat('../index.html'));
+    document.getElementById('tim-nhanh-admin')?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const q = e.target.value.trim();
+      if (!q) return;
+      location.href = `orders.html?q=${encodeURIComponent(q)}`;
     });
   }
 
-  // Cập nhật badge giỏ hàng
-  const refreshBadge = () => {
-    const badge = document.getElementById('cart-badge');
-    if (!badge) return;
-    const c = cart.count();
-    badge.textContent = c;
-    badge.style.display = c > 0 ? 'grid' : 'none';
-  };
-  cart.subscribe(refreshBadge);
-  if (user) cart.fetch().then(refreshBadge).catch(() => {});
-
-  icons();
+  veIcon();
 }
 
-// ---- Admin chrome ----
-const ADMIN_NAV = [
-  { to: 'products.html', label: 'Quản lý sản phẩm', icon: 'package', key: 'products' },
-  { to: 'categories.html', label: 'Quản lý danh mục', icon: 'folder-tree', key: 'categories' },
-  { to: 'inventory.html', label: 'Quản lý kho hàng', icon: 'warehouse', key: 'inventory' },
-  { to: 'orders.html', label: 'Quản lý đơn hàng', icon: 'receipt', key: 'orders' },
-  { to: 'vouchers.html', label: 'Quản lý voucher', icon: 'ticket', key: 'vouchers' },
-  { to: 'reviews.html', label: 'Quản lý đánh giá', icon: 'star', key: 'reviews' },
-  { to: 'users.html', label: 'Quản lý tài khoản', icon: 'users', key: 'users' },
-];
+/** Bọc .admin-content bằng .admin-main + topbar nếu HTML cũ chưa có */
+function damBaoKhungAdminMain() {
+  const shell = document.querySelector('.admin-shell');
+  const content = document.querySelector('.admin-shell > .admin-content, .admin-shell > main.admin-content');
+  if (!shell || !content) return;
+  if (document.querySelector('.admin-main')) return;
 
-export function mountAdminChrome(active) {
-  const user = auth.getUser();
-  const aside = document.getElementById('admin-aside');
-
-  ensureFavicon();
-
-  // Style chung cho 1 mục menu sidebar
-  const navItemBase =
-    'width:100%;display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:var(--radius);font-size:.875rem;font-weight:500;text-decoration:none;box-sizing:border-box;border:none;cursor:pointer;font-family:inherit;background:none';
-  const navItemNormal = `${navItemBase};color:var(--on-surface-variant)`;
-  const navItemActive = `${navItemBase};background:var(--primary);color:#fff;font-weight:600;box-shadow:var(--shadow-soft)`;
-  const navItemDanger = `${navItemBase};color:var(--error)`;
-
-  const navLinks = ADMIN_NAV.map((n) => {
-    const isActive = active === n.key;
-    const style = isActive ? navItemActive : navItemNormal;
-    const iconColor = isActive ? 'color:#fff' : 'color:var(--primary)';
-    return `
-      <a href="${n.to}" style="${style}">
-        <i data-lucide="${n.icon}" style="width:18px;height:18px;${iconColor}"></i>
-        <span>${n.label}</span>
-      </a>`;
-  }).join('');
-
-  aside.innerHTML = `
-    <!-- Logo + tên admin -->
-    <a href="../index.html" style="display:flex;align-items:center;gap:.5rem;margin-bottom:2rem;padding:0 .5rem;text-decoration:none;color:inherit">
-      <img src="${LOGO_URL}" alt="" style="height:2.75rem;width:auto;display:block;border-radius:var(--radius);object-fit:contain" />
-      <div>
-        <div style="font-weight:800;color:var(--primary);line-height:1">Trần Huy Hoàng Admin</div>
-        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--on-surface-variant);font-weight:700;margin-top:2px">Trung tâm điều hành</div>
-      </div>
-    </a>
-
-    <!-- Menu điều hướng: chiếm hết chiều cao còn lại -->
-    <nav style="flex:1;display:flex;flex-direction:column;gap:.25rem">
-      ${navLinks}
-    </nav>
-
-    <!-- Thông tin admin + nút đăng xuất (đẩy xuống đáy sidebar) -->
-    <div style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--outline-variant)">
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem">
-        <span style="width:2rem;height:2rem;border-radius:9999px;background:var(--primary-fixed);color:var(--primary);display:grid;place-items:center;font-weight:700;font-size:.875rem">
-          ${(user?.fullName || 'A').charAt(0).toUpperCase()}
-        </span>
-        <div style="min-width:0;flex:1">
-          <div style="font-size:.875rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${user?.fullName || ''}</div>
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--on-surface-variant);font-weight:700">Quản trị viên</div>
-        </div>
-      </div>
-      <button type="button" id="admin-logout" style="${navItemDanger}">
-        <i data-lucide="log-out" style="width:18px;height:18px"></i>
-        <span>Đăng xuất</span>
-      </button>
-    </div>`;
-
-  document.getElementById('admin-logout').addEventListener('click', () => doLogout('../index.html'));
-  icons();
+  const main = document.createElement('div');
+  main.className = 'admin-main';
+  const topbar = document.createElement('header');
+  topbar.className = 'admin-topbar';
+  topbar.id = 'admin-topbar';
+  content.parentNode.insertBefore(main, content);
+  main.appendChild(topbar);
+  main.appendChild(content);
 }
-
-export { icons };

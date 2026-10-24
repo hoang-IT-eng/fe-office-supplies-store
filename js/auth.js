@@ -1,41 +1,54 @@
-// Quản lý phiên đăng nhập, lưu vào localStorage (thay cho zustand persist).
-const KEY = 'auth-store';
+// Quản lý phiên đăng nhập: lưu người dùng + token vào localStorage.
+const KHOA_LUU = 'auth-store'; // tên khóa trong localStorage (giữ nguyên để không mất phiên cũ)
 
-function read() {
+/** Đọc dữ liệu phiên từ localStorage (lỗi thì trả object rỗng) */
+function docPhien() {
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || {};
+    return JSON.parse(localStorage.getItem(KHOA_LUU)) || {};
   } catch {
     return {};
   }
 }
 
-function write(state) {
-  localStorage.setItem(KEY, JSON.stringify(state));
+/** Ghi dữ liệu phiên vào localStorage */
+function ghiPhien(duLieu) {
+  localStorage.setItem(KHOA_LUU, JSON.stringify(duLieu));
 }
 
-export const auth = {
-  getUser() {
-    return read().user || null;
+export const taiKhoan = {
+  /** Người dùng đang đăng nhập, chưa đăng nhập thì null */
+  layNguoiDung() {
+    return docPhien().user || null;
   },
-  getAccessToken() {
-    return read().accessToken || null;
+
+  layAccessToken() {
+    return docPhien().accessToken || null;
   },
-  getRefreshToken() {
-    return read().refreshToken || null;
+
+  layRefreshToken() {
+    return docPhien().refreshToken || null;
   },
-  setSession(user, accessToken, refreshToken) {
-    write({ user, accessToken, refreshToken });
+
+  /** Lưu phiên mới sau khi đăng nhập thành công */
+  luuPhien(nguoiDung, accessToken, refreshToken) {
+    ghiPhien({ user: nguoiDung, accessToken, refreshToken });
   },
-  setTokens(accessToken, refreshToken) {
-    write({ ...read(), accessToken, refreshToken });
+
+  /** Chỉ thay token (dùng khi refresh token) */
+  luuToken(accessToken, refreshToken) {
+    ghiPhien({ ...docPhien(), accessToken, refreshToken });
   },
-  setUser(user) {
-    write({ ...read(), user });
+
+  /** Chỉ thay thông tin người dùng (dùng khi sửa profile) */
+  luuNguoiDung(nguoiDung) {
+    ghiPhien({ ...docPhien(), user: nguoiDung });
   },
-  logout() {
-    localStorage.removeItem(KEY);
+
+  dangXuat() {
+    localStorage.removeItem(KHOA_LUU);
   },
-  isAdmin() {
-    return read().user?.role === 'ADMIN';
+
+  laAdmin() {
+    return docPhien().user?.role === 'ADMIN';
   },
 };

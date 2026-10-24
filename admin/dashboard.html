@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bảng điều khiển - Admin Portal</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-aside" id="admin-aside"></aside>
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar"></header>
+      <main class="admin-content">
+        <div class="admin-page">
+
+          <section class="admin-page-header">
+            <div>
+              <div class="admin-kicker">
+                <span class="ms material-symbols-outlined">insights</span>
+                <span>Hệ thống phân tích thời gian thực</span>
+              </div>
+              <h1 class="page-title" style="margin-top:.25rem">Bảng điều khiển tổng quan</h1>
+              <p class="page-subtitle" style="margin-top:.35rem">
+                <span class="ms material-symbols-outlined" style="font-size:16px">calendar_today</span>
+                <span id="dong-bo-luc">Đang tải dữ liệu...</span>
+              </p>
+            </div>
+            <div class="dash-toolbar">
+              <div class="dash-period" role="group" aria-label="Khoảng thời gian">
+                <button type="button" data-ky="1">Hôm nay</button>
+                <button type="button" data-ky="7">7 ngày qua</button>
+                <button type="button" class="active" data-ky="30">30 ngày</button>
+                <button type="button" data-ky="thang">Tháng này</button>
+              </div>
+              <button type="button" class="btn btn-primary" id="nut-xuat" title="Tính năng demo">
+                <span class="ms material-symbols-outlined">file_download</span>
+                Xuất báo cáo Excel
+              </button>
+            </div>
+          </section>
+
+          <section class="dash-stat-grid">
+            <article class="dash-stat">
+              <div class="dash-stat-glow"></div>
+              <div class="dash-stat-top">
+                <span class="dash-stat-label">Doanh thu hôm nay</span>
+                <div class="dash-stat-icon"><span class="ms material-symbols-outlined">payments</span></div>
+              </div>
+              <div>
+                <div class="dash-stat-value" id="stat-doanh-thu">—</div>
+                <div class="dash-stat-trend" id="delta-doanh-thu"></div>
+              </div>
+            </article>
+            <article class="dash-stat">
+              <div class="dash-stat-glow"></div>
+              <div class="dash-stat-top">
+                <span class="dash-stat-label">Đơn hàng mới</span>
+                <div class="dash-stat-icon"><span class="ms material-symbols-outlined">shopping_cart</span></div>
+              </div>
+              <div>
+                <div class="dash-stat-value"><span id="stat-don-moi">0</span> <span class="dash-stat-unit">đơn</span></div>
+                <div class="dash-stat-trend" id="delta-don-moi"></div>
+              </div>
+            </article>
+            <article class="dash-stat">
+              <div class="dash-stat-glow"></div>
+              <div class="dash-stat-top">
+                <span class="dash-stat-label">Đơn đang giao</span>
+                <div class="dash-stat-icon amber"><span class="ms material-symbols-outlined">local_shipping</span></div>
+              </div>
+              <div>
+                <div class="dash-stat-value"><span id="stat-dang-giao">0</span> <span class="dash-stat-unit">đơn</span></div>
+                <div class="dash-stat-trend"><span class="muted" style="font-size:.75rem">Đang vận chuyển GHN</span></div>
+              </div>
+            </article>
+            <article class="dash-stat">
+              <div class="dash-stat-glow"></div>
+              <div class="dash-stat-top">
+                <span class="dash-stat-label">Sản phẩm sắp hết hàng</span>
+                <div class="dash-stat-icon amber"><span class="ms material-symbols-outlined">warning</span></div>
+              </div>
+              <div>
+                <div class="dash-stat-value"><span id="stat-ton-thap">0</span> <span class="dash-stat-unit">mã hàng</span></div>
+                <div class="dash-stat-trend">
+                  <span class="dash-pill warn"><span class="ms material-symbols-outlined">priority_high</span> Cần nhập gấp</span>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="dash-grid-2">
+            <div class="dash-panel">
+              <div class="dash-panel-head">
+                <div>
+                  <h2>Biểu đồ doanh thu 30 ngày qua</h2>
+                  <p>Đơn đã xác nhận / đang giao / hoàn thành</p>
+                </div>
+                <strong class="mono" id="tong-doanh-thu-30" style="color:var(--primary)">—</strong>
+              </div>
+              <div class="dash-chart-wrap" id="bieu-do-doanh-thu"></div>
+            </div>
+            <div class="dash-panel">
+              <div class="dash-panel-head">
+                <div>
+                  <h2>Cơ cấu đơn hàng</h2>
+                  <p>Theo trạng thái hiện tại</p>
+                </div>
+              </div>
+              <div class="dash-donut-wrap">
+                <div class="dash-donut" id="bieu-do-donut"></div>
+                <div class="dash-legend" id="chu-thich-donut"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="dash-grid-lists">
+            <div class="dash-panel">
+              <div class="dash-panel-head">
+                <div>
+                  <h2>Top 5 sản phẩm bán chạy nhất</h2>
+                  <p>Theo số lượng đã bán</p>
+                </div>
+                <a href="products.html" class="btn btn-outline btn-sm">Xem tất cả</a>
+              </div>
+              <div class="dash-rank-list" id="top-san-pham"></div>
+            </div>
+            <div class="dash-panel">
+              <div class="dash-panel-head">
+                <div>
+                  <h2>Cảnh báo tồn kho thấp</h2>
+                  <p id="mo-ta-ton-thap">Dưới hoặc bằng ngưỡng cảnh báo</p>
+                </div>
+                <a href="inventory.html" class="btn btn-outline btn-sm">Quản lý kho</a>
+              </div>
+              <div class="dash-stock-list" id="ton-thap"></div>
+            </div>
+          </section>
+
+          <section class="dash-panel">
+            <div class="dash-panel-head">
+              <div>
+                <h2>Đơn hàng mới nhất</h2>
+                <p id="mo-ta-don-moi">Đang tải...</p>
+              </div>
+              <a href="orders.html" class="btn btn-soft btn-sm">Xem tất cả đơn</a>
+            </div>
+            <div class="dash-table-wrap">
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Thời gian đặt</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="bang-don-moi">
+                  <tr><td colspan="6" class="cell-empty">Đang tải...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api } from '../js/api.js';
+    import { duongDanTapTin } from '../js/config.js';
+    import {
+      chuoiAnToan,
+      dinhDangTien,
+      dinhDangNgay,
+      nhanTrangThaiDon,
+      chipTrangThaiDon,
+    } from '../js/format.js';
+    import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
+    import { thongBao } from '../js/toast.js';
+
+    const MAU_TRANG_THAI = {
+      PENDING: '#1e40af',
+      CONFIRMED: '#0ea5e9',
+      SHIPPING: '#8b5cf6',
+      COMPLETED: '#10b981',
+      CANCELLED: '#ef4444',
+    };
+
+    function veDelta(el, giaTri) {
+      if (!el) return;
+      if (giaTri == null || Number.isNaN(Number(giaTri))) {
+        el.innerHTML = '';
+        return;
+      }
+      const up = Number(giaTri) >= 0;
+      el.innerHTML = `
+        <span class="dash-pill ${up ? 'up' : 'down'}">
+          <span class="ms material-symbols-outlined">${up ? 'trending_up' : 'trending_down'}</span>
+          ${up ? '+' : ''}${giaTri}%
+        </span>
+        <span class="muted">so với hôm qua</span>`;
+    }
+
+    function veBieuDoDoanhThu(points) {
+      const khung = document.getElementById('bieu-do-doanh-thu');
+      if (!points?.length) {
+        khung.innerHTML = '<p class="muted">Chưa có dữ liệu doanh thu.</p>';
+        return;
+      }
+      const w = 640;
+      const h = 220;
+      const pad = { t: 16, r: 12, b: 28, l: 12 };
+      const max = Math.max(...points.map((p) => p.amount), 1);
+      const innerW = w - pad.l - pad.r;
+      const innerH = h - pad.t - pad.b;
+      const stepX = points.length > 1 ? innerW / (points.length - 1) : innerW;
+      const coords = points.map((p, i) => ({
+        x: pad.l + i * stepX,
+        y: pad.t + innerH - (p.amount / max) * innerH,
+        ...p,
+      }));
+      const line = coords.map((c, i) => `${i ? 'L' : 'M'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+      const area =
+        `M${coords[0].x},${pad.t + innerH} ` +
+        coords.map((c) => `L${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') +
+        ` L${coords[coords.length - 1].x},${pad.t + innerH} Z`;
+      khung.innerHTML = `
+        <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Biểu đồ doanh thu">
+          <defs>
+            <linearGradient id="gradDoanhThu" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e40af" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#1e40af" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <path d="${area}" fill="url(#gradDoanhThu)" />
+          <path d="${line}" fill="none" stroke="#1e40af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>`;
+    }
+
+    function veDonut(breakdown) {
+      const khung = document.getElementById('bieu-do-donut');
+      const chuThich = document.getElementById('chu-thich-donut');
+      const items = breakdown?.byStatus || [];
+      const tong = breakdown?.tong || 0;
+      const r = 54;
+      const c = 2 * Math.PI * r;
+      let offset = 0;
+      const arcs = items
+        .filter((i) => i.count > 0)
+        .map((i) => {
+          const len = tong ? (i.count / tong) * c : 0;
+          const arc = `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${MAU_TRANG_THAI[i.status] || '#94a3b8'}" stroke-width="16" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-offset}" />`;
+          offset += len;
+          return arc;
+        })
+        .join('');
+      khung.innerHTML = `
+        <svg viewBox="0 0 140 140" aria-hidden="true">
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="#e8eef8" stroke-width="16" />
+          ${arcs || `<circle cx="70" cy="70" r="${r}" fill="none" stroke="#cbd5e1" stroke-width="16" />`}
+        </svg>
+        <div class="dash-donut-center"><div><strong>${tong}</strong><span>Tổng đơn</span></div></div>`;
+      chuThich.innerHTML = items
+        .map(
+          (i) => `
+          <div class="dash-legend-row">
+            <div class="dash-legend-left">
+              <span class="dash-dot" style="background:${MAU_TRANG_THAI[i.status] || '#94a3b8'}"></span>
+              ${chuoiAnToan(nhanTrangThaiDon[i.status] || i.status)}
+            </div>
+            <span><b>${i.count}</b> · ${i.percent}%</span>
+          </div>`,
+        )
+        .join('');
+    }
+
+    function veTopSanPham(list) {
+      const khung = document.getElementById('top-san-pham');
+      if (!list?.length) {
+        khung.innerHTML = '<p class="muted">Chưa có dữ liệu bán hàng.</p>';
+        return;
+      }
+      khung.innerHTML = list
+        .map((sp) => {
+          const anh = sp.anh
+            ? `<img class="dash-rank-thumb" src="${chuoiAnToan(duongDanTapTin(sp.anh))}" alt="" />`
+            : `<div class="dash-rank-thumb empty"><span class="ms material-symbols-outlined">inventory_2</span></div>`;
+          return `
+            <div class="dash-rank-item">
+              ${anh}
+              <div>
+                <div class="dash-rank-name">${chuoiAnToan(sp.ten)}</div>
+                <div class="dash-rank-bar"><div class="dash-rank-fill" style="width:${Math.max(8, sp.percent)}%"></div></div>
+              </div>
+              <div class="dash-rank-meta">
+                ${chuoiAnToan(dinhDangTien(sp.doanhThu))}
+                <small>${sp.soLuong} đã bán · ${sp.percent}%</small>
+              </div>
+            </div>`;
+        })
+        .join('');
+    }
+
+    function veTonThap(list) {
+      const khung = document.getElementById('ton-thap');
+      document.getElementById('mo-ta-ton-thap').textContent = list?.length
+        ? `${list.length} sản phẩm dưới ngưỡng`
+        : 'Không có cảnh báo';
+      if (!list?.length) {
+        khung.innerHTML = '<p class="muted">Không có sản phẩm sắp hết hàng.</p>';
+        return;
+      }
+      khung.innerHTML = list
+        .map(
+          (sp) => `
+          <div class="dash-stock-item">
+            <div>
+              <h4>${chuoiAnToan(sp.ten)}</h4>
+              <p>SKU: ${chuoiAnToan(sp.sku || '—')} · Tồn kho: ${sp.quantity} (ngưỡng ${sp.lowStockThreshold})</p>
+            </div>
+            <a class="btn btn-accent btn-sm" href="inventory.html">Nhập hàng nhanh</a>
+          </div>`,
+        )
+        .join('');
+    }
+
+    function veDonMoi(list) {
+      const bang = document.getElementById('bang-don-moi');
+      document.getElementById('mo-ta-don-moi').textContent = list?.length
+        ? `Hiển thị ${list.length} đơn gần nhất`
+        : 'Chưa có đơn hàng';
+      if (!list?.length) {
+        bang.innerHTML = '<tr><td colspan="6" class="cell-empty">Chưa có đơn hàng.</td></tr>';
+        return;
+      }
+      bang.innerHTML = list
+        .map((don) => {
+          const chuCai = (don.customerName || 'K').charAt(0).toUpperCase();
+          return `
+            <tr>
+              <td class="mono">#${chuoiAnToan(don.code)}</td>
+              <td>
+                <div class="dash-customer">
+                  <span class="avatar">${chuoiAnToan(chuCai)}</span>
+                  <div>
+                    <strong>${chuoiAnToan(don.customerName)}</strong>
+                    <span>${chuoiAnToan(don.customerPhone || '')}</span>
+                  </div>
+                </div>
+              </td>
+              <td>${chuoiAnToan(dinhDangNgay(don.createdAt))}</td>
+              <td><b>${chuoiAnToan(dinhDangTien(don.totalAmount))}</b></td>
+              <td><span class="chip ${chipTrangThaiDon[don.status] || 'chip-neutral'}">${chuoiAnToan(
+                nhanTrangThaiDon[don.status] || don.status,
+              )}</span></td>
+              <td><a href="order-detail.html?id=${chuoiAnToan(don.id)}" style="color:var(--primary);font-weight:600;font-size:.85rem">Xem chi tiết</a></td>
+            </tr>`;
+        })
+        .join('');
+    }
+
+    async function khoiDong() {
+      if (!batBuocAdmin()) return;
+      dungKhungAdmin('dashboard');
+
+      document.querySelectorAll('.dash-period button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.dash-period button').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+      document.getElementById('nut-xuat')?.addEventListener('click', () => {
+        thongBao.tin('Chức năng xuất Excel sẽ bổ sung sau');
+      });
+
+      try {
+        const data = await api.get('/dashboard/overview');
+        const s = data.summary || {};
+        document.getElementById('stat-doanh-thu').textContent = dinhDangTien(s.doanhThuHomNay || 0);
+        document.getElementById('stat-don-moi').textContent = s.donMoiHomNay || 0;
+        document.getElementById('stat-dang-giao').textContent = s.donDangGiao || 0;
+        document.getElementById('stat-ton-thap').textContent = s.sapHetHang || 0;
+        veDelta(document.getElementById('delta-doanh-thu'), s.doiDoanhThu);
+        veDelta(document.getElementById('delta-don-moi'), s.doiDonMoi);
+        document.getElementById('dong-bo-luc').textContent =
+          `Cập nhật ${dinhDangNgay(new Date())} • Đồng bộ vừa xong`;
+        document.getElementById('tong-doanh-thu-30').textContent =
+          `Tổng: ${dinhDangTien(data.revenueSeries?.tong || 0)}`;
+        veBieuDoDoanhThu(data.revenueSeries?.points || []);
+        veDonut(data.orderBreakdown);
+        veTopSanPham(data.topProducts || []);
+        veTonThap(data.lowStockItems || []);
+        veDonMoi(data.recentOrders || []);
+        veIcon();
+      } catch (loi) {
+        document.getElementById('bang-don-moi').innerHTML =
+          `<tr><td colspan="6" class="cell-empty">${chuoiAnToan(
+            loi?.response?.data?.message || 'Không tải được dashboard — hãy restart backend',
+          )}</td></tr>`;
+      }
+    }
+
+    khoiDong();
+  </script>
+</body>
+</html>

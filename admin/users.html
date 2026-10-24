@@ -5,23 +5,214 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản lý tài khoản - Admin</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+
+  <!-- CSS RIÊNG của trang quản lý tài khoản -->
+  <style>
+    /* Ô "Người dùng": avatar chữ cái + tên nằm ngang */
+    .user-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .user-cell .avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .user-cell-name {
+      font-weight: 700;
+    }
+    .user-date {
+      font-size: 0.75rem;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <div style="display:flex;min-height:100vh;background:var(--surface)">
-    <aside
-      id="admin-aside"
-      style="
-        position:fixed;left:0;top:0;height:100vh;width:16rem;
-        background:var(--surface-lowest);border-right:1px solid var(--outline-variant);
-        display:flex;flex-direction:column;padding:1.5rem 1rem;z-index:40;box-sizing:border-box
-      "
-    ></aside>
-    <main
-      id="app"
-      style="margin-left:16rem;flex:1;padding:2rem;max-width:80rem;width:100%;box-sizing:border-box;min-width:0"
-    ></main>
+  <div class="admin-shell">
+    <aside class="admin-aside" id="admin-aside"></aside>
+
+    <main class="admin-content">
+      <div class="admin-page">
+        <!-- Tiêu đề + 2 ô thống kê số tài khoản -->
+        <section class="admin-page-header">
+          <div>
+            <div class="admin-kicker">
+              <span class="ms material-symbols-outlined">group</span>
+              <span>Quản trị người dùng</span>
+            </div>
+            <h1 class="page-title" style="margin-top:.25rem">Quản lý người dùng</h1>
+            <div class="page-subtitle">
+              <i data-lucide="users"></i>
+              <p>Quản lý người dùng, khóa/mở khóa hoặc xóa tài khoản.</p>
+            </div>
+          </div>
+
+          <div class="stat-card-group">
+            <div class="stat-card stat-card-primary">
+              <div class="stat-card-icon"><i data-lucide="shield-check"></i></div>
+              <div>
+                <p class="stat-card-label">Admin</p>
+                <p class="stat-card-value" id="so-admin">0</p>
+              </div>
+            </div>
+            <div class="stat-card stat-card-secondary">
+              <div class="stat-card-icon"><i data-lucide="users"></i></div>
+              <div>
+                <p class="stat-card-label">Khách hàng</p>
+                <p class="stat-card-value" id="so-khach-hang">0</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng danh sách tài khoản khách hàng -->
+        <div class="card card-flush">
+          <div class="list-header">Danh sách tài khoản (<span id="so-dong">0</span>)</div>
+          <div class="table-scroll">
+            <table class="data-table data-table-wide">
+              <thead class="data-table-head">
+                <tr>
+                  <th>Người dùng</th>
+                  <th>Email</th>
+                  <th>SĐT</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th class="cell-actions">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="danh-sach-tai-khoan">
+                <tr><td colspan="7" class="cell-empty">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-  <script type="module" src="../js/pages/admin/users.js"></script>
+
+  <script type="module">
+    import { api } from '../js/api.js';
+    import { dinhDangNgay, chuoiAnToan } from '../js/format.js';
+    import { thongBao } from '../js/toast.js';
+    import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
+
+    const bangEl = document.getElementById('danh-sach-tai-khoan');
+    let danhSachNguoiDung = [];
+
+    /** Vẽ bảng tài khoản (bảng chỉ liệt kê khách hàng, không liệt kê admin) */
+    function veBangTaiKhoan() {
+      const soAdmin = danhSachNguoiDung.filter((nguoiDung) => nguoiDung.role === 'ADMIN').length;
+      const khachHang = danhSachNguoiDung.filter((nguoiDung) => nguoiDung.role !== 'ADMIN');
+
+      document.getElementById('so-admin').textContent = soAdmin;
+      document.getElementById('so-khach-hang').textContent = khachHang.length;
+      document.getElementById('so-dong').textContent = khachHang.length;
+
+      if (khachHang.length === 0) {
+        bangEl.innerHTML = '<tr><td colspan="7" class="cell-empty">Chưa có tài khoản khách hàng nào</td></tr>';
+        return;
+      }
+
+      bangEl.innerHTML = khachHang.map(taoHtmlDongTaiKhoan).join('');
+      ganSuKienBang();
+      veIcon();
+    }
+
+    /** Tạo HTML cho 1 dòng tài khoản */
+    function taoHtmlDongTaiKhoan(nguoiDung) {
+      const chipVaiTro =
+        nguoiDung.role === 'ADMIN'
+          ? '<span class="chip chip-info"><i data-lucide="shield-check"></i> Admin</span>'
+          : '<span class="chip chip-neutral">Khách hàng</span>';
+
+      const chipTrangThai = nguoiDung.isActive
+        ? '<span class="chip chip-success">Hoạt động</span>'
+        : '<span class="chip chip-danger">Bị khóa</span>';
+
+      return `
+        <tr>
+          <td>
+            <div class="user-cell">
+              <div class="avatar">${chuoiAnToan((nguoiDung.fullName || 'U').charAt(0).toUpperCase())}</div>
+              <div class="user-cell-name">${chuoiAnToan(nguoiDung.fullName || '')}</div>
+            </div>
+          </td>
+          <td>${chuoiAnToan(nguoiDung.email)}</td>
+          <td class="muted">${chuoiAnToan(nguoiDung.phone || '—')}</td>
+          <td>${chipVaiTro}</td>
+          <td>${chipTrangThai}</td>
+          <td class="muted user-date">${dinhDangNgay(nguoiDung.createdAt)}</td>
+          <td class="cell-actions">
+            <button type="button" class="icon-btn icon-btn-edit"
+              data-khoa="${chuoiAnToan(nguoiDung.id)}" data-dang-hoat-dong="${nguoiDung.isActive}"
+              title="${nguoiDung.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}">
+              <i data-lucide="${nguoiDung.isActive ? 'lock' : 'lock-open'}"></i>
+            </button>
+            <button type="button" class="icon-btn icon-btn-delete" data-xoa="${chuoiAnToan(nguoiDung.id)}" title="Xóa">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>`;
+    }
+
+    /** Gắn sự kiện nút khóa/mở khóa và nút xóa */
+    function ganSuKienBang() {
+      bangEl.querySelectorAll('[data-khoa]').forEach((nut) =>
+        nut.addEventListener('click', () =>
+          xuLyDoiTrangThai(nut.dataset.khoa, nut.dataset.dangHoatDong === 'true'),
+        ),
+      );
+      bangEl.querySelectorAll('[data-xoa]').forEach((nut) =>
+        nut.addEventListener('click', () => xuLyXoa(nut.dataset.xoa)),
+      );
+    }
+
+    /** Gọi API khóa hoặc mở khóa 1 tài khoản */
+    async function xuLyDoiTrangThai(id, dangHoatDong) {
+      try {
+        await api.patch(`/users/${id}/active`, { isActive: !dangHoatDong });
+        thongBao.thanhCong(dangHoatDong ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản');
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không đổi được trạng thái');
+      }
+    }
+
+    /** Xác nhận rồi gọi API xóa tài khoản */
+    async function xuLyXoa(id) {
+      if (!confirm('Xóa người dùng này?')) return;
+      try {
+        await api.delete(`/users/${id}`);
+        thongBao.thanhCong('Đã xóa tài khoản');
+        await taiDanhSach();
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Không xóa được tài khoản');
+      }
+    }
+
+    /** Gọi API lấy toàn bộ người dùng rồi vẽ lại bảng */
+    async function taiDanhSach() {
+      danhSachNguoiDung = (await api.get('/users')) || [];
+      veBangTaiKhoan();
+    }
+
+    /** Khởi động trang quản lý tài khoản */
+    async function khoiDong() {
+      if (!batBuocAdmin()) return;
+      dungKhungAdmin('users');
+
+      try {
+        await taiDanhSach();
+      } catch {
+        bangEl.innerHTML = '<tr><td colspan="7" class="cell-empty">Không tải được danh sách tài khoản</td></tr>';
+      }
+      veIcon();
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>

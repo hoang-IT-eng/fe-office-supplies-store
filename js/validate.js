@@ -1,116 +1,132 @@
-/** Tiện ích kiểm tra ràng buộc form — dùng chung toàn bộ frontend. */
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_RE = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
-const VOUCHER_RE = /^[A-Z0-9_-]{2,30}$/;
+/**
+ * Kiểm tra ràng buộc form — dùng chung cho toàn bộ frontend.
+ *
+ * Cách dùng ở mỗi trang:
+ *   const ketQua = kiemTraForm(
+ *     [{ id: 'email', label: 'Email', rules: ['required', 'email'] }],
+ *     formElement,
+ *     thongBao,
+ *   );
+ *   if (!ketQua) return;      // sai → đã tự hiện lỗi dưới ô nhập
+ *   ketQua.values.email       // đúng → lấy giá trị đã đọc
+ */
 
-function str(v) {
-  return v == null ? '' : String(v).trim();
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REGEX_DIEN_THOAI = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+const REGEX_MA_VOUCHER = /^[A-Z0-9_-]{2,30}$/;
+
+/** Đổi giá trị bất kỳ thành chuỗi đã bỏ khoảng trắng hai đầu */
+function chuoi(giaTri) {
+  return giaTri == null ? '' : String(giaTri).trim();
 }
 
-function num(v) {
-  if (v === '' || v == null) return NaN;
-  return Number(v);
+/** Đổi giá trị thành số, chuỗi rỗng → NaN */
+function so(giaTri) {
+  if (giaTri === '' || giaTri == null) return NaN;
+  return Number(giaTri);
 }
 
-function fieldWrap(input) {
+/** Tìm khối bọc ngoài ô nhập để gắn dòng chữ lỗi vào cuối khối */
+function timKhoiBocNgoai(oNhap) {
   return (
-    input.closest('.field') ||
-    input.closest('.input-wrap')?.parentElement ||
-    input.parentElement
+    oNhap.closest('.form-field') ||
+    oNhap.closest('.input-icon-wrap')?.parentElement ||
+    oNhap.parentElement
   );
 }
 
-function runRule(rule, value, ctx) {
-  const colon = rule.indexOf(':');
-  const name = colon >= 0 ? rule.slice(0, colon) : rule;
-  const param = colon >= 0 ? rule.slice(colon + 1) : null;
-  const label = ctx.label || 'Trường này';
-  const s = typeof value === 'string' ? value : value == null ? '' : String(value);
+/** Chạy 1 luật (ví dụ 'minLength:6') và trả về câu lỗi, hợp lệ thì trả null */
+function kiemTraMotLuat(luat, giaTri, boiCanh) {
+  const viTriHaiCham = luat.indexOf(':');
+  const tenLuat = viTriHaiCham >= 0 ? luat.slice(0, viTriHaiCham) : luat;
+  const thamSo = viTriHaiCham >= 0 ? luat.slice(viTriHaiCham + 1) : null;
+  const nhan = boiCanh.label || 'Trường này';
+  const s = typeof giaTri === 'string' ? giaTri : giaTri == null ? '' : String(giaTri);
 
-  switch (name) {
+  switch (tenLuat) {
     case 'required':
-      if (str(s) === '') return `${label} là bắt buộc`;
+      if (chuoi(s) === '') return `${nhan} là bắt buộc`;
       break;
     case 'email':
-      if (str(s) && !EMAIL_RE.test(str(s))) return `${label} không hợp lệ`;
+      if (chuoi(s) && !REGEX_EMAIL.test(chuoi(s))) return `${nhan} không hợp lệ`;
       break;
     case 'minLength': {
-      const n = Number(param);
-      if (str(s).length < n) return `${label} phải có ít nhất ${n} ký tự`;
+      const n = Number(thamSo);
+      if (chuoi(s).length < n) return `${nhan} phải có ít nhất ${n} ký tự`;
       break;
     }
     case 'maxLength': {
-      const n = Number(param);
-      if (str(s).length > n) return `${label} tối đa ${n} ký tự`;
+      const n = Number(thamSo);
+      if (chuoi(s).length > n) return `${nhan} tối đa ${n} ký tự`;
       break;
     }
     case 'phone':
-      if (str(s) && !PHONE_RE.test(str(s).replace(/\s/g, ''))) {
-        return `${label} không hợp lệ (VD: 0912345678)`;
+      if (chuoi(s) && !REGEX_DIEN_THOAI.test(chuoi(s).replace(/\s/g, ''))) {
+        return `${nhan} không hợp lệ (VD: 0912345678)`;
       }
       break;
     case 'number': {
-      const n = num(s);
-      if (str(s) !== '' && Number.isNaN(n)) return `${label} phải là số`;
+      const n = so(s);
+      if (chuoi(s) !== '' && Number.isNaN(n)) return `${nhan} phải là số`;
       break;
     }
     case 'integer': {
-      const n = num(s);
-      if (str(s) !== '' && (!Number.isInteger(n) || Number.isNaN(n))) {
-        return `${label} phải là số nguyên`;
+      const n = so(s);
+      if (chuoi(s) !== '' && (!Number.isInteger(n) || Number.isNaN(n))) {
+        return `${nhan} phải là số nguyên`;
       }
       break;
     }
     case 'min': {
-      const n = num(s);
-      const min = Number(param);
-      if (str(s) !== '' && (Number.isNaN(n) || n < min)) {
-        return `${label} phải ≥ ${min.toLocaleString('vi-VN')}`;
+      const n = so(s);
+      const nhoNhat = Number(thamSo);
+      if (chuoi(s) !== '' && (Number.isNaN(n) || n < nhoNhat)) {
+        return `${nhan} phải ≥ ${nhoNhat.toLocaleString('vi-VN')}`;
       }
       break;
     }
     case 'max': {
-      const n = num(s);
-      const max = Number(param);
-      if (str(s) !== '' && (Number.isNaN(n) || n > max)) {
-        return `${label} phải ≤ ${max.toLocaleString('vi-VN')}`;
+      const n = so(s);
+      const lonNhat = Number(thamSo);
+      if (chuoi(s) !== '' && (Number.isNaN(n) || n > lonNhat)) {
+        return `${nhan} phải ≤ ${lonNhat.toLocaleString('vi-VN')}`;
       }
       break;
     }
     case 'percent': {
-      const n = num(s);
-      if (str(s) !== '' && (Number.isNaN(n) || n <= 0 || n > 100)) {
-        return `${label} phải từ 1 đến 100`;
+      const n = so(s);
+      if (chuoi(s) !== '' && (Number.isNaN(n) || n <= 0 || n > 100)) {
+        return `${nhan} phải từ 1 đến 100`;
       }
       break;
     }
     case 'match': {
-      const other = ctx.values?.[param] ?? document.getElementById(param)?.value ?? '';
-      if (s !== other) return `${label} không khớp`;
+      const giaTriKhac = boiCanh.values?.[thamSo] ?? document.getElementById(thamSo)?.value ?? '';
+      if (s !== giaTriKhac) return `${nhan} không khớp`;
       break;
     }
     case 'lteField': {
-      const other = num(ctx.values?.[param] ?? document.getElementById(param)?.value);
-      const n = num(s);
-      if (str(s) !== '' && !Number.isNaN(other) && !Number.isNaN(n) && n > other) {
-        return `${label} không được lớn hơn giá gốc`;
+      const giaTriKhac = so(boiCanh.values?.[thamSo] ?? document.getElementById(thamSo)?.value);
+      const n = so(s);
+      if (chuoi(s) !== '' && !Number.isNaN(giaTriKhac) && !Number.isNaN(n) && n > giaTriKhac) {
+        return `${nhan} không được lớn hơn giá gốc`;
       }
       break;
     }
     case 'dateAfter': {
-      const start = ctx.values?.[param] ?? document.getElementById(param)?.value;
-      if (s && start && new Date(s) <= new Date(start)) {
-        return `${label} phải sau ngày bắt đầu`;
+      const ngayBatDau = boiCanh.values?.[thamSo] ?? document.getElementById(thamSo)?.value;
+      if (s && ngayBatDau && new Date(s) <= new Date(ngayBatDau)) {
+        return `${nhan} phải sau ngày bắt đầu`;
       }
       break;
     }
     case 'voucherCode':
-      if (str(s) && !VOUCHER_RE.test(str(s).toUpperCase())) {
-        return `${label} chỉ gồm chữ, số, gạch ngang (2–30 ký tự)`;
+      if (chuoi(s) && !REGEX_MA_VOUCHER.test(chuoi(s).toUpperCase())) {
+        return `${nhan} chỉ gồm chữ, số, gạch ngang (2–30 ký tự)`;
       }
       break;
     case 'select':
-      if (!str(s)) return `Vui lòng chọn ${label.toLowerCase()}`;
+      if (!chuoi(s)) return `Vui lòng chọn ${nhan.toLowerCase()}`;
       break;
     default:
       break;
@@ -118,19 +134,22 @@ function runRule(rule, value, ctx) {
   return null;
 }
 
-/** @param {Array<{id:string, label?:string, value?:any, rules?:string[]}>} fields */
-export function validateFields(fields) {
+/**
+ * Kiểm tra danh sách trường, trả về { ok, values, errors }.
+ * @param {Array<{id:string, label?:string, value?:any, rules?:string[]}>} cacTruong
+ */
+export function kiemTraCacTruong(cacTruong) {
   const values = {};
   const errors = [];
 
-  for (const f of fields) {
-    const raw = f.value !== undefined ? f.value : document.getElementById(f.id)?.value;
-    values[f.id] = raw;
-    for (const rule of f.rules || []) {
-      const msg = runRule(rule, raw, { ...f, values });
-      if (msg) {
-        errors.push({ id: f.id, message: msg });
-        break;
+  for (const truong of cacTruong) {
+    const giaTriGoc = truong.value !== undefined ? truong.value : document.getElementById(truong.id)?.value;
+    values[truong.id] = giaTriGoc;
+    for (const luat of truong.rules || []) {
+      const cauLoi = kiemTraMotLuat(luat, giaTriGoc, { ...truong, values });
+      if (cauLoi) {
+        errors.push({ id: truong.id, message: cauLoi });
+        break; // 1 trường chỉ hiện 1 lỗi đầu tiên
       }
     }
   }
@@ -139,57 +158,58 @@ export function validateFields(fields) {
   return { ok: true, values };
 }
 
-export function showErrors(errors, root) {
-  clearErrors(root);
-  for (const e of errors) {
-    const input = document.getElementById(e.id);
-    if (!input) continue;
-    input.classList.add('input-invalid');
-    input.setAttribute('aria-invalid', 'true');
-    const wrap = fieldWrap(input);
-    if (!wrap) continue;
-    let err = wrap.querySelector('.field-error');
-    if (!err) {
-      err = document.createElement('p');
-      err.className = 'field-error';
-      wrap.appendChild(err);
+/** Viền đỏ ô nhập + hiện dòng chữ lỗi bên dưới */
+export function hienThiLoi(danhSachLoi, phamVi) {
+  xoaLoi(phamVi);
+  for (const loi of danhSachLoi) {
+    const oNhap = document.getElementById(loi.id);
+    if (!oNhap) continue;
+    oNhap.classList.add('input-invalid');
+    oNhap.setAttribute('aria-invalid', 'true');
+    const khoi = timKhoiBocNgoai(oNhap);
+    if (!khoi) continue;
+    let dongLoi = khoi.querySelector('.form-error');
+    if (!dongLoi) {
+      dongLoi = document.createElement('p');
+      dongLoi.className = 'form-error';
+      khoi.appendChild(dongLoi);
     }
-    err.textContent = e.message;
+    dongLoi.textContent = loi.message;
   }
 }
 
-export function clearErrors(root) {
-  const scope = root || document;
-  scope.querySelectorAll('.input-invalid').forEach((el) => {
+/** Bỏ hết viền đỏ và dòng chữ lỗi trong phạm vi (mặc định cả trang) */
+export function xoaLoi(phamVi) {
+  const goc = phamVi || document;
+  goc.querySelectorAll('.input-invalid').forEach((el) => {
     el.classList.remove('input-invalid');
     el.removeAttribute('aria-invalid');
   });
-  scope.querySelectorAll('.field-error').forEach((el) => el.remove());
+  goc.querySelectorAll('.form-error').forEach((el) => el.remove());
 }
 
-/** Xóa lỗi khi người dùng sửa input. */
-export function bindLiveClear(root) {
-  if (!root) return;
-  // Tắt bong bóng lỗi mặc định theo ngôn ngữ trình duyệt để mọi thông báo
-  // ràng buộc đều được guardForm hiển thị bằng tiếng Việt.
-  if (root.matches?.('form')) root.noValidate = true;
+/** Tự xóa lỗi ngay khi người dùng sửa lại ô nhập */
+export function tuDongXoaLoi(form) {
+  if (!form) return;
+  // Tắt bong bóng lỗi mặc định của trình duyệt để mọi thông báo đều là tiếng Việt.
+  if (form.matches?.('form')) form.noValidate = true;
 
-  root.querySelectorAll('input, select, textarea').forEach((el) => {
-    const handler = () => {
-      el.classList.remove('input-invalid');
-      el.removeAttribute('aria-invalid');
-      fieldWrap(el)?.querySelector('.field-error')?.remove();
+  form.querySelectorAll('input, select, textarea').forEach((oNhap) => {
+    const xuLy = () => {
+      oNhap.classList.remove('input-invalid');
+      oNhap.removeAttribute('aria-invalid');
+      timKhoiBocNgoai(oNhap)?.querySelector('.form-error')?.remove();
     };
-    el.addEventListener('input', handler);
-    el.addEventListener('change', handler);
+    oNhap.addEventListener('input', xuLy);
+    oNhap.addEventListener('change', xuLy);
   });
 }
 
-/** Kiểm tra nhanh: hiện lỗi + toast, trả về false nếu không hợp lệ. */
-export function guardForm(fields, root, toast) {
-  const result = validateFields(fields);
-  if (result.ok) return result;
-  showErrors(result.errors, root);
-  if (toast) toast.error(result.errors[0].message);
+/** Kiểm tra nhanh khi submit: sai thì hiện lỗi + toast và trả về false */
+export function kiemTraForm(cacTruong, form, thongBao) {
+  const ketQua = kiemTraCacTruong(cacTruong);
+  if (ketQua.ok) return ketQua;
+  hienThiLoi(ketQua.errors, form);
+  if (thongBao) thongBao.loi(ketQua.errors[0].message);
   return false;
 }

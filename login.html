@@ -3,16 +3,156 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Đăng nhập - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Đăng nhập - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang đăng nhập -->
+  <style>
+    /* Thẻ đăng nhập: rộng tối đa 28rem, luôn nằm giữa trang */
+    .login-card {
+      max-width: 28rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .login-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Hàng "Mật khẩu" + link "Quên mật khẩu?" nằm hai đầu */
+    .login-password-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.375rem;
+    }
+    .login-password-row .form-label {
+      margin-bottom: 0;
+    }
+    .login-forgot-link {
+      font-size: 0.75rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Dòng chữ dưới cùng: "Chưa có tài khoản?" */
+    .login-footer {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+      margin-top: 1.25rem;
+    }
+    .login-footer a {
+      color: var(--primary);
+      font-weight: 600;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <section class="card card-elevated login-card">
+        <h1 class="login-title">Đăng nhập</h1>
+
+        <form id="form-dang-nhap" class="form-stack">
+          <div class="form-field">
+            <label class="form-label" for="email">Email</label>
+            <input id="email" class="form-input" type="email" placeholder="email@example.com" required />
+          </div>
+
+          <div class="form-field">
+            <div class="login-password-row">
+              <label class="form-label" for="password">Mật khẩu</label>
+              <a href="forgot-password.html" class="login-forgot-link">Quên mật khẩu?</a>
+            </div>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input
+                id="password"
+                class="form-input form-input-with-icon form-input-with-toggle"
+                type="password"
+                placeholder="••••••••"
+                required
+              />
+              <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="nut-dang-nhap" class="btn btn-primary btn-block">Đăng nhập</button>
+        </form>
+
+        <p class="login-footer">
+          Chưa có tài khoản?
+          <a href="register.html">Đăng ký ngay</a>
+        </p>
+      </section>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/login.js"></script>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { taiKhoan } from './js/auth.js';
+    import { thongBao } from './js/toast.js';
+    import { dungKhungKhachHang } from './js/layout.js';
+    import { tuDongXoaLoi, kiemTraForm } from './js/validate.js';
+
+    const form = document.getElementById('form-dang-nhap');
+    const nutGui = document.getElementById('nut-dang-nhap');
+    const thamSoUrl = new URLSearchParams(location.search);
+
+    /** Kiểm tra form rồi gọi API đăng nhập, thành công thì lưu phiên và chuyển trang */
+    async function xuLyDangNhap(suKien) {
+      suKien.preventDefault();
+
+      // Validate: email đúng định dạng, mật khẩu không được rỗng
+      const ketQua = kiemTraForm(
+        [
+          { id: 'email', label: 'Email', rules: ['required', 'email'] },
+          { id: 'password', label: 'Mật khẩu', rules: ['required', 'minLength:1'] },
+        ],
+        form,
+        thongBao,
+      );
+      if (!ketQua) return;
+
+      nutGui.disabled = true;
+      nutGui.textContent = 'Đang đăng nhập...';
+
+      try {
+        // Gọi API đăng nhập, backend trả về user + 2 token
+        const duLieu = await api.post('/auth/login', {
+          email: ketQua.values.email.trim(),
+          password: ketQua.values.password,
+        });
+        taiKhoan.luuPhien(duLieu.user, duLieu.accessToken, duLieu.refreshToken);
+        thongBao.thanhCong('Đăng nhập thành công');
+        // ?next=... là trang người dùng muốn vào trước khi bị chặn
+        location.href = thamSoUrl.get('next') || 'index.html';
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Đăng nhập thất bại');
+        nutGui.disabled = false;
+        nutGui.textContent = 'Đăng nhập';
+      }
+    }
+
+    dungKhungKhachHang('');
+    tuDongXoaLoi(form);
+    form.addEventListener('submit', xuLyDangNhap);
+
+    // Vừa bấm link xác thực email xong thì chúc mừng người dùng
+    if (thamSoUrl.get('verified')) thongBao.thanhCong('Đã xác thực email, mời đăng nhập');
+  </script>
 </body>
 </html>

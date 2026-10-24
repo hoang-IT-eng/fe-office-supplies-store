@@ -3,16 +3,313 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Giỏ hàng - Văn phòng phẩm Trần Huy Hoàng</title>
+  <title>Giỏ hàng - Folio & Quill</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- CSS RIÊNG của trang giỏ hàng -->
+  <style>
+    /* Các khối của trang xếp dọc */
+    .cart-page {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Bố cục 2 cột: danh sách hàng bên trái, tóm tắt bên phải */
+    .cart-layout {
+      display: grid;
+      gap: 1.5rem;
+    }
+    @media (min-width: 1024px) {
+      .cart-layout {
+        grid-template-columns: 2fr 1fr;
+        align-items: start;
+      }
+      .cart-summary {
+        position: sticky;
+        top: 6rem;
+      }
+    }
+
+    .cart-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* Một dòng hàng trong giỏ */
+    .cart-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .cart-item-thumb {
+      width: 5rem;
+      height: 5rem;
+      border-radius: 0.5rem;
+      object-fit: cover;
+      background: var(--surface-low);
+      flex-shrink: 0;
+    }
+    /* Ô vuông chứa icon khi sản phẩm chưa có ảnh */
+    .cart-item-thumb-empty {
+      display: grid;
+      place-items: center;
+      color: var(--on-surface-variant);
+    }
+    .cart-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .cart-item-name {
+      font-weight: 600;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cart-item-price {
+      color: var(--primary);
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+    .cart-item-stock {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+      margin-top: 0.25rem;
+    }
+    .cart-item-total {
+      font-weight: 700;
+      text-align: right;
+      width: 8rem;
+    }
+
+    /* Màn hình nhỏ: dòng hàng xuống thành nhiều hàng cho đỡ chật */
+    @media (max-width: 640px) {
+      .cart-item {
+        flex-wrap: wrap;
+      }
+      .cart-item-total {
+        width: auto;
+        margin-left: auto;
+      }
+    }
+
+    .cart-summary-title {
+      font-weight: 700;
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+    }
+    .cart-summary-note {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+    }
+    .cart-checkout-button {
+      margin-top: 1.25rem;
+    }
+  </style>
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header" id="site-header"></header>
-    <main class="site-main" id="app"></main>
+
+    <main class="site-main">
+      <div class="cart-page">
+        <div class="page-heading">
+          <i data-lucide="shopping-cart"></i>
+          <h1 class="section-title">Giỏ hàng của bạn</h1>
+          <span class="chip chip-info" id="so-san-pham">0 sản phẩm</span>
+        </div>
+
+        <p class="loading-block" id="khoi-dang-tai">Đang tải...</p>
+
+        <!-- Giỏ hàng trống -->
+        <div class="card empty-block" id="khoi-gio-trong" hidden>
+          <div class="empty-block-icon"><i data-lucide="shopping-cart"></i></div>
+          <h2 class="empty-block-title">Giỏ hàng trống</h2>
+          <p>Hãy khám phá sản phẩm và thêm vào giỏ hàng</p>
+          <p><a href="index.html" class="btn btn-primary cart-checkout-button">Tiếp tục mua sắm</a></p>
+        </div>
+
+        <!-- Giỏ hàng có sản phẩm -->
+        <div class="cart-layout" id="khoi-gio-co-hang" hidden>
+          <!-- Danh sách dòng hàng do JS đổ vào -->
+          <div class="cart-items" id="danh-sach-gio-hang"></div>
+
+          <aside class="card card-elevated cart-summary">
+            <h2 class="cart-summary-title">Tóm tắt đơn hàng</h2>
+            <div class="summary-list">
+              <div class="summary-row">
+                <span class="summary-row-label">Tạm tính</span>
+                <span class="summary-row-value" id="tam-tinh">0 ₫</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-row-label">Phí vận chuyển</span>
+                <span class="cart-summary-note">Tính ở bước thanh toán</span>
+              </div>
+              <div class="divider"></div>
+              <div class="summary-total">
+                <span class="summary-total-label">Tổng cộng</span>
+                <span class="summary-total-value" id="tong-cong">0 ₫</span>
+              </div>
+            </div>
+            <a href="checkout.html" class="btn btn-primary btn-block btn-lg cart-checkout-button">
+              Tiến hành thanh toán <i data-lucide="arrow-right"></i>
+            </a>
+          </aside>
+        </div>
+      </div>
+    </main>
+
     <footer class="site-footer" id="site-footer"></footer>
   </div>
-  <script type="module" src="js/pages/cart.js"></script>
+
+  <script type="module">
+    import { duongDanTapTin, duongDanTrang } from './js/config.js';
+    import { dinhDangTien, chuoiAnToan } from './js/format.js';
+    import { gioHang } from './js/cart.js';
+    import { thongBao } from './js/toast.js';
+    import { dungKhungKhachHang, veIcon, batBuocDangNhap } from './js/layout.js';
+    import { kiemTraCacTruong } from './js/validate.js';
+
+    const khoiDangTai = document.getElementById('khoi-dang-tai');
+    const khoiGioTrong = document.getElementById('khoi-gio-trong');
+    const khoiGioCoHang = document.getElementById('khoi-gio-co-hang');
+    const danhSachEl = document.getElementById('danh-sach-gio-hang');
+
+    /** Giá bán thực tế của 1 sản phẩm (ưu tiên giá khuyến mãi) */
+    function giaBan(sanPham) {
+      return Number(sanPham.discountPrice) > 0 ? Number(sanPham.discountPrice) : Number(sanPham.price);
+    }
+
+    /** Tạo HTML cho 1 dòng hàng trong giỏ */
+    function taoHtmlDongHang(dong) {
+      const gia = giaBan(dong.product);
+      const tonKho = dong.product.inventory?.quantity ?? 0;
+      const duongDanChiTiet = duongDanTrang('product.html', { id: dong.product.id });
+
+      const anh = dong.product.images?.[0]
+        ? `<img src="${duongDanTapTin(dong.product.images[0])}" alt="" class="cart-item-thumb" />`
+        : `<div class="cart-item-thumb cart-item-thumb-empty"><i data-lucide="box"></i></div>`;
+
+      return `
+        <article class="card cart-item">
+          <a href="${duongDanChiTiet}">${anh}</a>
+          <div class="cart-item-info">
+            <a href="${duongDanChiTiet}" class="cart-item-name">${chuoiAnToan(dong.product.name)}</a>
+            <div class="cart-item-price">${dinhDangTien(gia)}</div>
+          
+          </div>
+          <div class="qty-box">
+            <button type="button" data-giam="${dong.id}" aria-label="Giảm số lượng">−</button>
+            <input type="number" min="1" value="${dong.quantity}" data-so-luong="${dong.id}" aria-label="Số lượng" />
+            <button type="button" data-tang="${dong.id}" aria-label="Tăng số lượng">+</button>
+          </div>
+          <div class="cart-item-total">${dinhDangTien(gia * dong.quantity)}</div>
+          <button type="button" class="icon-btn icon-btn-delete" data-xoa="${dong.id}" title="Xóa">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </article>`;
+    }
+
+    /** Vẽ lại toàn bộ giỏ hàng (chạy mỗi khi giỏ hàng thay đổi) */
+    function veGioHang() {
+      const danhSach = gioHang.danhSach;
+
+      khoiDangTai.hidden = true;
+      document.getElementById('so-san-pham').textContent = `${gioHang.demSoLuong()} sản phẩm`;
+
+      // Giỏ trống → chỉ hiện khối thông báo trống
+      khoiGioTrong.hidden = danhSach.length > 0;
+      khoiGioCoHang.hidden = danhSach.length === 0;
+      if (danhSach.length === 0) {
+        veIcon();
+        return;
+      }
+
+      danhSachEl.innerHTML = danhSach.map(taoHtmlDongHang).join('');
+      document.getElementById('tam-tinh').textContent = dinhDangTien(gioHang.tongTien());
+      document.getElementById('tong-cong').textContent = dinhDangTien(gioHang.tongTien());
+
+      ganSuKienDongHang();
+      veIcon();
+    }
+
+    /** Đổi số lượng 1 dòng hàng: kiểm tra tồn kho rồi gọi API */
+    async function doiSoLuong(dongId, soLuong) {
+      const dong = gioHang.danhSach.find((x) => x.id === dongId);
+      const tonKho = dong?.product?.inventory?.quantity ?? 9999;
+
+      // Validate: số nguyên, ít nhất 1 và không vượt tồn kho
+      const ketQua = kiemTraCacTruong([
+        { id: 'so-luong', label: 'Số lượng', value: soLuong, rules: ['required', 'integer', 'min:1', `max:${tonKho}`] },
+      ]);
+      if (!ketQua.ok) {
+        thongBao.loi(ketQua.errors[0].message);
+        veGioHang();
+        return;
+      }
+
+      try {
+        await gioHang.capNhat(dongId, soLuong);
+      } catch (loi) {
+        thongBao.loi(loi?.response?.data?.message || 'Lỗi cập nhật');
+        veGioHang();
+      }
+    }
+
+    /** Gắn sự kiện cho các nút +, −, ô số lượng và nút xóa của từng dòng */
+    function ganSuKienDongHang() {
+      danhSachEl.querySelectorAll('[data-giam]').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          const dong = gioHang.danhSach.find((x) => x.id === nut.dataset.giam);
+          doiSoLuong(dong.id, dong.quantity - 1);
+        }),
+      );
+
+      danhSachEl.querySelectorAll('[data-tang]').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          const dong = gioHang.danhSach.find((x) => x.id === nut.dataset.tang);
+          doiSoLuong(dong.id, dong.quantity + 1);
+        }),
+      );
+
+      danhSachEl.querySelectorAll('[data-so-luong]').forEach((oNhap) =>
+        oNhap.addEventListener('change', () => doiSoLuong(oNhap.dataset.soLuong, Number(oNhap.value))),
+      );
+
+      danhSachEl.querySelectorAll('[data-xoa]').forEach((nut) =>
+        nut.addEventListener('click', async () => {
+          try {
+            await gioHang.xoa(nut.dataset.xoa);
+            thongBao.thanhCong('Đã xóa khỏi giỏ hàng');
+          } catch (loi) {
+            thongBao.loi(loi?.response?.data?.message || 'Không xóa được sản phẩm');
+          }
+        }),
+      );
+    }
+
+    /** Khởi động trang: chặn khách chưa đăng nhập rồi tải giỏ hàng từ API */
+    async function khoiDong() {
+      if (!batBuocDangNhap()) return;
+      dungKhungKhachHang('cart');
+
+      // Mỗi khi giỏ hàng đổi (thêm/sửa/xóa) thì vẽ lại danh sách
+      gioHang.theoDoi(veGioHang);
+
+      try {
+        await gioHang.tai();
+      } catch {
+        veGioHang();
+      }
+    }
+
+    khoiDong();
+  </script>
 </body>
 </html>
