@@ -4,10 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Folio & Quill</title>
+  <script>
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('js-motion');
+    }
+  </script>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.15/dist/lenis.css" />
 
   <style>
-    .home-page { display: flex; flex-direction: column; }
+    .home-page { display: block; }
 
     .home-hero {
       position: relative;
@@ -69,6 +75,8 @@
       text-transform: uppercase;
     }
     .btn-hero:hover { background: #fff; color: var(--navy); }
+    html.js-motion .hero-title,
+    html.js-motion .btn-hero { visibility: hidden; }
 
     .home-split {
       display: grid;
@@ -102,9 +110,16 @@
       overflow: hidden;
     }
     .home-split-media img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .media-parallax { position: absolute; inset: -12% 0; }
+    .home-split-media,
+    .category-card { overflow: hidden; }
 
     .home-block { padding: 3rem 1.25rem 2rem; }
     .home-block .fq-section-title { margin-bottom: 1.5rem; }
+    .fq-dong { display: block; line-height: 1.6; padding-bottom: .12em; }
+    #goi-y-cho-ban .fq-section-title { margin-bottom: .75rem; }
+    #goi-y-kicker { position: relative; z-index: 1; display: block; }
+    #san-pham-tieu-bieu { position: relative; z-index: 1; background: #fff; }
 
     .category-grid {
       display: grid;
@@ -134,7 +149,6 @@
       object-fit: cover;
       display: block;
       background: #ddd8d0;
-      transition: transform .6s ease;
     }
     .category-card::after {
       content: "";
@@ -160,6 +174,12 @@
       text-decoration: underline;
       text-underline-offset: 4px;
     }
+    .xem-het-dm {
+      padding: 1.25rem 1.25rem 0;
+      text-align: center;
+      font-size: 14px;
+    }
+    .xem-het-dm a { text-decoration: underline; text-underline-offset: 4px; }
 
     .flash-panel {
       display: flex;
@@ -221,6 +241,19 @@
     }
     .carousel-btn-prev { left: 8px; }
     .carousel-btn-next { right: 8px; }
+    @media (min-width: 768px) {
+      html.js-motion #san-pham-tieu-bieu.cuon-ngang .carousel { overflow: hidden; }
+      html.js-motion #san-pham-tieu-bieu.cuon-ngang .carousel-btn { display: none; }
+      html.js-motion #san-pham-tieu-bieu.cuon-ngang #bang-tieu-bieu {
+        overflow: visible;
+        scroll-snap-type: none;
+        width: max-content;
+      }
+      html.js-motion #san-pham-tieu-bieu.cuon-ngang #bang-tieu-bieu .product-card {
+        flex: 0 0 clamp(240px, 28vw, 360px);
+        scroll-snap-align: none;
+      }
+    }
 
     .filter-box {
       padding: 0 0 1rem;
@@ -270,28 +303,178 @@
     @media (min-width: 560px) { .b2b-form-grid { grid-template-columns: 1fr 1fr; } }
     .b2b-form-grid .full { grid-column: 1 / -1; }
 
-    .story-row {
+    .xuong-map {
+      background: #F6F1E7;
+      padding: clamp(3rem, 6vw, 5rem) clamp(1.25rem, 4vw, 4rem);
+    }
+    .xuong-map .fq-section-title { margin-bottom: .4rem; }
+    .xuong-map .product-count-note { text-align: center; margin-bottom: 2rem; }
+    .xuong-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+    @media (min-width: 900px) {
+      .xuong-layout { grid-template-columns: 1.2fr 0.8fr; gap: 3rem; }
+    }
+    .xuong-ban-do { position: relative; background: #F6F1E7; }
+    .xuong-ban-do > img { width: 100%; height: auto; display: block; }
+    .xuong-cham {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--navy);
+      border-radius: 50%;
+      background: #fff;
+      color: var(--navy);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 400;
+      transform: translate(-50%, -50%);
+      display: grid;
+      place-items: center;
+    }
+    @media (min-width: 900px) { .xuong-cham { width: 40px; height: 40px; } }
+    .xuong-cham[aria-current="true"] {
+      background: var(--navy);
+      color: #fff;
+      border-color: #B08D57;
+    }
+    .xuong-nut-hang {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: var(--line);
-      border-top: 1px solid var(--line);
+      gap: .5rem;
+      margin-top: .75rem;
     }
-    @media (min-width: 900px) { .story-row { grid-template-columns: repeat(4, 1fr); } }
-    .story-card { background: #fff; }
-    .story-media {
+    .xuong-nut-hang button {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--navy);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 400;
+    }
+    .xuong-nut-hang button[aria-current="true"] {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    @media (min-width: 900px) { .xuong-nut-hang { display: none; } }
+    .xuong-anh-wrap {
+      position: relative;
       aspect-ratio: 1;
+      overflow: hidden;
+      background: var(--tile);
+    }
+    .xuong-anh {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    html.js-motion .xuong-anh { transition: opacity .35s ease; }
+    @media (prefers-reduced-motion: reduce) {
+      html.js-motion .xuong-anh { transition: none; }
+    }
+    .xuong-the h3 {
+      margin-top: 1.1rem;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      color: var(--navy);
+      line-height: 1.15;
+    }
+    .xuong-the p {
+      margin-top: .6rem;
+      max-width: 38ch;
+      font-family: var(--font-ui);
+      font-weight: 300;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--navy-soft);
+    }
+
+    .home-quote {
+      background: #F6F1E7;
+      text-align: center;
+      padding: clamp(4.5rem, 10vw, 7rem) 1.5rem;
+    }
+    .home-quote-line {
+      margin: 0 auto;
+      max-width: 16ch;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2.75rem, 8vw, 96px);
+      line-height: 1.05;
+      color: var(--navy);
+    }
+    .home-quote-sub {
+      margin: 1.5rem 0 0;
+      color: var(--navy-soft);
+      font-weight: 300;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+
+    .che-tac { background: #fff; position: relative; z-index: 2; }
+    .che-tac-pin {
+      display: grid;
+      gap: 1.5rem;
+      padding: 3rem 1.25rem 4rem;
+      background: #fff;
+    }
+    .che-tac-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1.75rem;
+      padding: 0;
+      list-style: none;
+    }
+    .che-tac-step {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(1.75rem, 3vw, 2.75rem);
+      line-height: 1.15;
+      color: var(--navy);
+    }
+    .che-tac-frame { display: grid; gap: 1px; background: var(--line); }
+    .che-tac-photo {
+      width: 100%;
+      aspect-ratio: 1;
       object-fit: cover;
       display: block;
       background: var(--tile);
     }
-    .story-card figcaption {
-      padding: .85rem 1rem 1.1rem;
-      text-align: center;
-      font-size: 13px;
-      color: var(--navy-soft);
+    .che-tac .fq-section-title { text-align: left; }
+    @media (min-width: 768px) {
+      .che-tac-pin {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        align-items: center;
+        gap: 4rem;
+        min-height: calc(100vh - var(--nav-h, 48px));
+        padding: 2rem 4vw;
+      }
+      html.js-motion .che-tac-frame {
+        position: relative;
+        aspect-ratio: 1;
+        overflow: hidden;
+        background: var(--tile);
+      }
+      html.js-motion .che-tac-photo {
+        position: absolute;
+        inset: 0;
+        height: 100%;
+        opacity: 0;
+      }
+      html.js-motion .che-tac-photo:first-child { opacity: 1; }
+      html.js-motion .che-tac-step { opacity: 0.3; }
+      html.js-motion .che-tac-step:first-child { opacity: 1; }
     }
 
     .pagination-summary { margin-bottom: .75rem; color: var(--navy-soft); font-size: .875rem; text-align: center; }
@@ -327,7 +510,7 @@
     <main class="site-main site-main-home">
       <div class="home-page">
 
-        <section class="home-hero reveal" id="bo-suu-tap" aria-label="Bộ sưu tập">
+        <section class="home-hero" id="bo-suu-tap" aria-label="Bộ sưu tập">
           <img id="anh-hero" alt="Bộ sưu tập 2027" width="2400" height="1350" hidden />
           <div class="hero-fallback" id="hero-fallback">ẢNH</div>
           <div class="home-hero-shade" aria-hidden="true"></div>
@@ -337,15 +520,22 @@
           </div>
         </section>
 
-        <section class="home-split reveal">
+        <section class="home-split">
           <div class="home-split-copy">
             <h2>Bộ sưu tập cao cấp</h2>
             <p>Khám phá sự tinh xảo trong từng chi tiết.</p>
             <a href="#featured-products" class="btn btn-primary">Mua ngay</a>
           </div>
           <div class="home-split-media">
-            <img id="anh-doi" src="images/folio/split-collection.webp" alt="Bộ sưu tập cao cấp" width="1200" height="900" />
+            <div class="media-parallax">
+              <img id="anh-doi" src="images/folio/split-collection.webp" alt="Bộ sưu tập cao cấp" width="1200" height="900" />
+            </div>
           </div>
+        </section>
+
+        <section class="home-quote" id="cau-viet-cham" aria-label="Viết chậm lại">
+          <p class="home-quote-line">Viết chậm lại.</p>
+          <p class="home-quote-sub">Từng trang giấy, khâu tay tại Sài Gòn</p>
         </section>
 
         <section id="muc-danh-muc" aria-labelledby="tieu-de-danh-muc">
@@ -355,6 +545,7 @@
           <div class="category-grid" id="luoi-danh-muc">
             <p class="loading-block">Đang tải danh mục...</p>
           </div>
+          <p class="xem-het-dm"><a href="category.html">Xem hết danh mục</a></p>
         </section>
 
         <section class="flash-panel" id="flash-sale" hidden>
@@ -375,6 +566,26 @@
           <h2 class="fq-section-title" id="goi-y-tieu-de">Gợi ý cho bạn</h2>
           <p class="product-count-note" id="goi-y-kicker">Dành riêng cho bạn</p>
           <div class="product-grid" id="luoi-goi-y"></div>
+        </section>
+
+        <section class="che-tac" id="che-tac" aria-labelledby="tieu-de-che-tac">
+          <div class="che-tac-pin">
+            <div class="che-tac-copy">
+              <h2 class="fq-section-title" id="tieu-de-che-tac">Chế tác thủ công</h2>
+              <ol class="che-tac-steps">
+                <li class="che-tac-step">Chọn da</li>
+                <li class="che-tac-step">Khâu chỉ</li>
+                <li class="che-tac-step">Ép chữ vàng</li>
+                <li class="che-tac-step">Gói quà</li>
+              </ol>
+            </div>
+            <div class="che-tac-frame">
+              <img class="che-tac-photo" src="images/folio/story-xuong-dong-so.webp" alt="Chọn da" width="1000" height="1000" />
+              <img class="che-tac-photo" src="images/folio/story-da-chi-khau.webp" alt="Khâu chỉ" width="1000" height="1000" />
+              <img class="che-tac-photo" src="images/folio/story-ngoi-but.webp" alt="Ép chữ vàng" width="1000" height="1000" />
+              <img class="che-tac-photo" src="images/folio/story-goi-qua.webp" alt="Gói quà" width="1000" height="1000" />
+            </div>
+          </div>
         </section>
 
         <section class="home-block" id="san-pham-tieu-bieu">
@@ -458,15 +669,32 @@
           </form>
         </section>
 
-        <section id="cau-chuyen">
-          <div class="home-block">
-            <h2 class="fq-section-title">Câu chuyện</h2>
-          </div>
-          <div class="story-row">
-            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-xuong-dong-so.webp" alt="Xưởng đóng sổ" width="1000" height="1000" loading="lazy" /><figcaption>Xưởng đóng sổ</figcaption></figure>
-            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-da-chi-khau.webp" alt="Da và chỉ khâu" width="1000" height="1000" loading="lazy" /><figcaption>Da và chỉ khâu</figcaption></figure>
-            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-ngoi-but.webp" alt="Ngòi bút" width="1000" height="1000" loading="lazy" /><figcaption>Ngòi bút</figcaption></figure>
-            <figure class="story-card reveal"><img class="story-media" src="images/folio/story-goi-qua.webp" alt="Gói quà" width="1000" height="1000" loading="lazy" /><figcaption>Gói quà</figcaption></figure>
+        <section id="cau-chuyen" class="xuong-map" aria-labelledby="tieu-de-cau-chuyen">
+          <h2 class="fq-section-title" id="tieu-de-cau-chuyen">Câu chuyện</h2>
+          <p class="product-count-note">Từ Sài Gòn, với trân trọng.</p>
+          <div class="xuong-layout">
+            <div>
+              <div class="xuong-ban-do" role="group" aria-label="Sơ đồ xưởng Folio &amp; Quill">
+                <img src="images/folio/xuong-map.jpg" alt="" width="1152" height="864" />
+                <button type="button" class="xuong-cham" data-buoc="0" style="left:11.7%;top:75.3%" aria-current="true">1<span class="visually-hidden">. Chọn da</span></button>
+                <button type="button" class="xuong-cham" data-buoc="1" style="left:45.9%;top:14.4%">2<span class="visually-hidden">. Khâu chỉ</span></button>
+                <button type="button" class="xuong-cham" data-buoc="2" style="left:83.8%;top:16.3%">3<span class="visually-hidden">. Ép chữ vàng</span></button>
+                <button type="button" class="xuong-cham" data-buoc="3" style="left:87.4%;top:80.8%">4<span class="visually-hidden">. Gói quà</span></button>
+              </div>
+              <div class="xuong-nut-hang" aria-label="Các bước trong xưởng">
+                <button type="button" data-buoc="0" aria-current="true">1. Chọn da</button>
+                <button type="button" data-buoc="1">2. Khâu chỉ</button>
+                <button type="button" data-buoc="2">3. Ép chữ vàng</button>
+                <button type="button" data-buoc="3">4. Gói quà</button>
+              </div>
+            </div>
+            <article class="xuong-the" aria-live="polite">
+              <div class="xuong-anh-wrap">
+                <img id="xuong-anh" class="xuong-anh" src="images/folio/story-xuong-dong-so.webp" alt="Chọn da" width="1000" height="1000" />
+              </div>
+              <h3 id="xuong-ten">Chọn da</h3>
+              <p id="xuong-mota">Mỗi tấm da được chọn tay theo độ dày và vân. Chỉ những tấm đều màu mới vào xưởng.</p>
+            </article>
           </div>
         </section>
 
@@ -477,6 +705,11 @@
     <footer class="site-footer" id="site-footer"></footer>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.15/dist/lenis.min.js" defer></script>
   <script type="module">
     import { api } from './js/api.js';
     import { taiKhoan } from './js/auth.js';
@@ -484,6 +717,8 @@
     import { duongDanTapTin, duongDanTrang } from './js/config.js';
     import { dinhDangTien, chuoiAnToan } from './js/format.js';
     import { dungKhungKhachHang, veIcon, ganHienKhiCuon } from './js/layout.js';
+    import { khoiDongChuyenDong, lamMoiChuyenDong, hienNutDaThem, capNhatTheSanPham } from './js/motion.js';
+    import { khoiDongBanDoXuong } from './js/xuong-map.js';
     import { thongBao } from './js/toast.js';
     import { tuDongXoaLoi, kiemTraForm } from './js/validate.js';
 
@@ -534,15 +769,6 @@
       select.value = boLoc.danhMucId;
     }
 
-    function chonDanhMuc(id) {
-      boLoc.danhMucId = id || '';
-      trangHienTai = 1;
-      document.getElementById('danh-muc').value = boLoc.danhMucId;
-      veChipDanhMuc();
-      taiDanhSachSanPham();
-      document.getElementById('featured-products').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
     function fileAnhDanhMuc(tenGoc) {
       const ten = String(tenGoc || '')
         .toLowerCase()
@@ -567,16 +793,15 @@
         .map((dm) => {
           const src = dm.hinhAnh ? duongDanTapTin(dm.hinhAnh) : `images/folio/${fileAnhDanhMuc(dm.name)}`;
           return `
-            <button type="button" class="category-card" data-danh-muc="${chuoiAnToan(dm.id)}">
-              <img class="category-media" src="${chuoiAnToan(src)}" alt="${chuoiAnToan(dm.name)}" width="900" height="1200" loading="lazy" />
+            <a class="category-card" href="${duongDanTrang('category.html', { id: dm.id })}">
+              <div class="media-parallax">
+                <img class="category-media" src="${chuoiAnToan(src)}" alt="" width="900" height="1200" loading="lazy" />
+              </div>
               <h3>${chuoiAnToan(dm.name)}</h3>
-              <span class="category-more">Khám phá</span>
-            </button>`;
+              <span class="category-more">Xem sản phẩm</span>
+            </a>`;
         })
         .join('');
-      luoiDanhMuc.querySelectorAll('[data-danh-muc]').forEach((nut) => {
-        nut.addEventListener('click', () => chonDanhMuc(nut.dataset.danhMuc));
-      });
       veIcon();
     }
 
@@ -632,7 +857,7 @@
       }
 
       return `
-        <article class="product-card reveal">
+        <article class="product-card">
           <button type="button" class="product-wish" aria-label="Yêu thích">
             <i data-lucide="heart"></i>
           </button>
@@ -673,6 +898,7 @@
       ganSuKienThemVaoGio(khung);
       veIcon();
       ganHienKhiCuon(khung);
+      capNhatTheSanPham();
     }
 
     async function taiFlashSale() {
@@ -718,6 +944,7 @@
         ganSuKienThemVaoGio(luoiGoiY);
         veIcon();
         ganHienKhiCuon(luoiGoiY);
+        capNhatTheSanPham();
       } catch {
         panelGoiY.hidden = true;
       }
@@ -770,6 +997,7 @@
         ganSuKienThemVaoGio(khungSanPham);
         veIcon();
         ganHienKhiCuon(khungSanPham);
+        capNhatTheSanPham();
       } catch {
         oSoSanPham.textContent = 'Không lấy được số sản phẩm.';
         khungSanPham.innerHTML = '<div class="card empty-block">Lỗi tải sản phẩm.</div>';
@@ -788,6 +1016,7 @@
           try {
             await gioHang.them(nut.dataset.themVaoGio, 1);
             thongBao.thanhCong('Đã thêm vào giỏ hàng');
+            hienNutDaThem(nut);
           } catch (loi) {
             thongBao.loi(loi?.response?.data?.message || 'Lỗi khi thêm giỏ hàng');
           } finally {
@@ -920,6 +1149,8 @@
 
     async function khoiDong() {
       dungKhungKhachHang('home');
+      khoiDongBanDoXuong();
+      khoiDongChuyenDong();
       const hero = document.getElementById('anh-hero');
       const bannerLocal = 'images/folio/hero.webp';
       const thuBanner = new Image();
@@ -943,6 +1174,7 @@
       ganCarousel();
       chayDemNguoc();
       await Promise.all([taiFlashSale(), taiGoiYTrangChu(), taiDanhSachSanPham()]);
+      lamMoiChuyenDong();
       ganHienKhiCuon();
       veIcon();
     }

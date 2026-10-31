@@ -128,7 +128,18 @@
         </div>
 
         <!-- Chip lọc theo trạng thái (JS đổ số lượng vào từng chip) -->
-        <div class="card order-filter-bar" id="thanh-loc-trang-thai"></div>
+        <section class="card order-tools">
+          <input
+            id="tu-khoa-don"
+            class="form-input"
+            type="search"
+            placeholder="Mã đơn, tên khách hoặc số điện thoại"
+            aria-label="Tìm đơn hàng"
+            maxlength="100"
+            autocomplete="off"
+          />
+          <div class="order-filter-bar" id="thanh-loc-trang-thai"></div>
+        </section>
 
         <!-- Danh sách đơn hàng -->
         <div class="order-list" id="danh-sach-don">
@@ -141,7 +152,7 @@
   <script type="module">
     import { api } from '../js/api.js';
     import { duongDanTrang } from '../js/config.js';
-    import { dinhDangTien, dinhDangNgay, nhanTrangThaiDon, chipTrangThaiDon, chuoiAnToan } from '../js/format.js';
+    import { dinhDangTien, dinhDangNgay, nhanTrangThaiDon, chuoiAnToan } from '../js/format.js';
     import { thongBao } from '../js/toast.js';
     import { dungKhungAdmin, veIcon, batBuocAdmin } from '../js/layout.js';
 
@@ -160,7 +171,7 @@
 
     let danhSachDon = [];
     let trangThaiDangLoc = ''; // '' = xem tất cả
-    const tuKhoaTim = new URLSearchParams(location.search).get('q')?.trim().toLowerCase() || '';
+    let tuKhoaTim = new URLSearchParams(location.search).get('q')?.trim().toLowerCase() || '';
 
     /** Đếm số đơn theo từng trạng thái để hiện lên chip lọc */
     function demTheoTrangThai() {
@@ -233,12 +244,9 @@
           <div class="order-card-total">${dinhDangTien(don.totalAmount)}</div>
 
           <div class="order-card-status">
-            <select class="form-input" data-trang-thai="${chuoiAnToan(don.id)}" ${khongDoiDuoc ? 'disabled' : ''}>
+            <select class="form-input" data-trang-thai="${chuoiAnToan(don.id)}" ${khongDoiDuoc ? 'disabled' : ''} aria-label="Trạng thái đơn">
               ${cacOption}
             </select>
-            <div class="order-card-status-chip">
-              <span class="chip ${chipTrangThaiDon[don.status] || 'chip-neutral'}">${nhanTrangThaiDon[don.status]}</span>
-            </div>
           </div>
         </div>`;
     }
@@ -314,12 +322,13 @@
     async function khoiDong() {
       if (!batBuocAdmin()) return;
       dungKhungAdmin('orders');
-      if (tuKhoaTim) {
-        const goiY = document.getElementById('goi-y-tim');
-        if (goiY) {
-          goiY.hidden = false;
-          goiY.textContent = `Đang lọc theo từ khóa: “${tuKhoaTim}”`;
-        }
+      const oTim = document.getElementById('tu-khoa-don');
+      if (oTim) {
+        oTim.value = tuKhoaTim;
+        oTim.addEventListener('input', () => {
+          tuKhoaTim = oTim.value.trim().toLowerCase();
+          veDanhSachDon();
+        });
       }
 
       try {

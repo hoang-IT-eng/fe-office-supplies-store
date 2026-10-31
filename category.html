@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Danh mục - Folio & Quill</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .cat-mo {
+      padding: 1.75rem 1.5rem 1.25rem;
+      max-width: 40rem;
+    }
+    .cat-mo h1 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2.2rem, 4vw, 3.25rem);
+      line-height: 1;
+      color: var(--navy);
+    }
+    .cat-mo p {
+      margin-top: .7rem;
+      max-width: 36ch;
+      color: var(--navy-soft);
+      font-weight: 300;
+    }
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1px;
+      background: var(--line);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    @media (min-width: 700px) {
+      .cat-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .cat-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 42vh;
+      padding: 2rem 1.25rem 1.75rem;
+      overflow: hidden;
+      color: #fff;
+      background: var(--tile);
+      text-align: center;
+    }
+    @media (min-width: 700px) {
+      .cat-card { min-height: 46vh; }
+      .cat-grid .cat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    }
+    .cat-card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #ddd8d0;
+    }
+    .cat-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(11, 30, 68, .55), rgba(11, 30, 68, .12) 46%, rgba(11, 30, 68, 0) 72%);
+    }
+    .cat-card h2,
+    .cat-card span { position: relative; z-index: 1; }
+    .cat-card h2 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2rem, 4vw, 3.25rem);
+      line-height: 1.05;
+    }
+    .cat-card span {
+      margin-top: .65rem;
+      font-size: 13px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .cat-spread {
+      display: grid;
+      align-items: start;
+    }
+    @media (min-width: 960px) {
+      .cat-spread { grid-template-columns: 220px minmax(0, 1fr); }
+    }
+    .cat-index {
+      padding: 1.5rem 1.25rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    @media (min-width: 960px) {
+      .cat-index {
+        position: sticky;
+        top: 7.5rem;
+        padding: 2rem 1.25rem 3rem 1.5rem;
+        border-bottom: 0;
+        border-right: 1px solid var(--line);
+      }
+    }
+    .cat-index a {
+      display: block;
+      padding: .6rem 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .cat-index a[aria-current="page"] { font-weight: 500; }
+
+    .cat-goods .product-grid {
+      background: transparent;
+      border: 0;
+    }
+    .cat-goods .product-card { border: 1px solid var(--line); }
+    @media (max-width: 699px) {
+      .cat-goods .product-grid { grid-template-columns: 1fr; }
+    }
+
+    .cat-goods { padding: 1.75rem 1.25rem 4rem; }
+    @media (min-width: 960px) {
+      .cat-goods { padding: 2rem 2rem 4rem 1.75rem; }
+    }
+    .cat-title {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2.6rem, 5vw, 4.25rem);
+      line-height: 1;
+      color: var(--navy);
+    }
+    .cat-desc {
+      margin-top: .85rem;
+      max-width: 58ch;
+      color: var(--navy-soft);
+      font-weight: 300;
+    }
+    .cat-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 1.75rem 0 1.25rem;
+    }
+    .cat-count {
+      color: var(--navy-soft);
+      font-size: 14px;
+      font-weight: 300;
+      padding-bottom: .45rem;
+    }
+    .cat-loc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: flex-end;
+    }
+    .cat-loc .form-input {
+      width: auto;
+      height: 40px;
+      background: #fff;
+    }
+    .cat-loc input[type="search"] { width: min(100%, 14rem); }
+    .cat-loc input[type="number"] { width: 7rem; }
+    .cat-loc select { width: 9.5rem; }
+
+    .pagination-summary { margin-bottom: .75rem; color: var(--navy-soft); font-size: .875rem; text-align: center; }
+    .pagination-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; }
+    .pagination-btn {
+      min-width: 2.5rem;
+      height: 2.5rem;
+      padding: 0 .625rem;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      background: #fff;
+      font-size: .875rem;
+    }
+    .pagination-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .pagination-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .pagination-ellipsis { min-width: 1.5rem; text-align: center; color: var(--navy-soft); }
+    #khung-phan-trang { margin-top: 1.5rem; }
+  </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="site-header" id="site-header"></header>
+    <main class="site-main site-main-home">
+      <div id="trang-danh-muc">
+        <p class="loading-block">Đang tải danh mục...</p>
+      </div>
+    </main>
+    <footer class="site-footer" id="site-footer"></footer>
+  </div>
+
+  <script type="module">
+    import { api } from './js/api.js';
+    import { taiKhoan } from './js/auth.js';
+    import { gioHang } from './js/cart.js';
+    import { duongDanTapTin, duongDanTrang } from './js/config.js';
+    import { dinhDangTien, chuoiAnToan } from './js/format.js';
+    import { dungKhungKhachHang, veIcon } from './js/layout.js';
+    import { hienNutDaThem } from './js/motion.js';
+    import { thongBao } from './js/toast.js';
+    import { tuDongXoaLoi, kiemTraForm } from './js/validate.js';
+
+    dungKhungKhachHang('category');
+
+    const SO_MOI_TRANG = 12;
+    const goc = document.getElementById('trang-danh-muc');
+    const thamSoMo = new URLSearchParams(location.search);
+
+    let danhSachDanhMuc = [];
+    let danhMucId = thamSoMo.get('id') || '';
+    let trangHienTai = Math.max(1, Number(thamSoMo.get('page')) || 1);
+    let sapXep = thamSoMo.get('sort') || 'moi';
+    let tuKhoa = thamSoMo.get('q') || '';
+    let giaTu = thamSoMo.get('min') || '';
+    let giaDen = thamSoMo.get('max') || '';
+
+    function fileAnhDanhMuc(tenGoc) {
+      const ten = String(tenGoc || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd');
+      if (ten.includes('ba lo')) return 'cat-ba-lo.webp';
+      if (ten.includes('but')) return 'cat-but-viet.webp';
+      if (ten.includes('sach')) return 'cat-sach-giao-khoa.webp';
+      if (ten.includes('van phong')) return 'cat-van-phong.webp';
+      if (ten.includes('vo') || ten.includes('so')) return 'cat-vo-so.webp';
+      return 'cat-tat-ca.webp';
+    }
+
+    function anhDanhMuc(dm) {
+      if (dm.hinhAnh) return duongDanTapTin(dm.hinhAnh);
+      return `images/folio/${fileAnhDanhMuc(dm.name)}`;
+    }
+
+    function capNhatUrl() {
+      const qs = new URLSearchParams();
+      if (danhMucId) qs.set('id', danhMucId);
+      if (tuKhoa) qs.set('q', tuKhoa);
+      if (giaTu !== '') qs.set('min', giaTu);
+      if (giaDen !== '') qs.set('max', giaDen);
+      if (sapXep !== 'moi') qs.set('sort', sapXep);
+      if (trangHienTai > 1) qs.set('page', String(trangHienTai));
+      const query = qs.toString();
+      history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}`);
+    }
+
+    function thamSoSapXep() {
+      if (sapXep === 'gia-tang') return { sortBy: 'price', order: 'ASC' };
+      if (sapXep === 'gia-giam') return { sortBy: 'price', order: 'DESC' };
+      if (sapXep === 'ten') return { sortBy: 'name', order: 'ASC' };
+      return { sortBy: 'createdAt', order: 'DESC' };
+    }
+
+    function htmlMucLuc(dangChonId) {
+      const tatCa = dangChonId
+        ? `<a href="category.html">Tất cả danh mục</a>`
+        : '';
+      const muc = danhSachDanhMuc
+        .map((dm) => {
+          const dangXem = dm.id === dangChonId;
+          return `<a href="${duongDanTrang('category.html', { id: dm.id })}" ${dangXem ? 'aria-current="page"' : ''}>${chuoiAnToan(dm.name)}</a>`;
+        })
+        .join('');
+      return `<nav class="cat-index" aria-label="Các danh mục">${tatCa}${muc}</nav>`;
+    }
+
+    function veMucLuc() {
+      document.title = 'Danh mục - Folio & Quill';
+      if (!danhSachDanhMuc.length) {
+        goc.innerHTML = `
+          <div class="cat-mo">
+            <h1>Danh mục</h1>
+            <p>Chưa có danh mục. Thêm danh mục trong trang quản trị rồi quay lại đây.</p>
+          </div>`;
+        return;
+      }
+      goc.innerHTML = `
+        <header class="cat-mo">
+          <h1>Danh mục</h1>
+          <p>Chọn một nhóm để xem sản phẩm.</p>
+        </header>
+        <div class="cat-grid">
+          ${danhSachDanhMuc
+            .map(
+              (dm) => `
+              <a class="cat-card" href="${duongDanTrang('category.html', { id: dm.id })}">
+                <img src="${chuoiAnToan(anhDanhMuc(dm))}" alt="" width="900" height="1200" />
+                <h2>${chuoiAnToan(dm.name)}</h2>
+                <span>Xem sản phẩm</span>
+              </a>`,
+            )
+            .join('')}
+        </div>`;
+    }
+
+    function htmlTheSanPham(sanPham) {
+      const coGiamGia = Number(sanPham.discountPrice) > 0;
+      const giaHienThi = coGiamGia ? Number(sanPham.discountPrice) : Number(sanPham.price);
+      const tonKho = sanPham.inventory?.quantity ?? 0;
+      const hetHang = tonKho <= 0;
+      const phanTramGiam = coGiamGia
+        ? Math.round((1 - Number(sanPham.discountPrice) / Number(sanPham.price)) * 100)
+        : 0;
+      const anh = sanPham.images?.[0]
+        ? `<img src="${duongDanTapTin(sanPham.images[0])}" alt="${chuoiAnToan(sanPham.name)}" />`
+        : '<span class="product-thumb-empty">ẢNH</span>';
+      const badge = phanTramGiam > 0 ? `<span class="product-pill">-${phanTramGiam}%</span>` : '';
+
+      return `
+        <article class="product-card">
+          <a href="${duongDanTrang('product.html', { id: sanPham.id })}" class="product-card-link">
+            <div class="product-thumb">
+              ${anh}
+              ${badge}
+              ${hetHang ? '<span class="chip chip-danger product-badge-stock">Hết hàng</span>' : ''}
+            </div>
+            <div class="product-card-body">
+              <h3 class="product-card-name">${chuoiAnToan(sanPham.name)}</h3>
+              <div class="product-card-prices">
+                <span class="product-card-price">${dinhDangTien(giaHienThi)}</span>
+                ${coGiamGia ? `<span class="product-card-old-price">${dinhDangTien(sanPham.price)}</span>` : ''}
+              </div>
+            </div>
+          </a>
+          <div class="product-card-actions">
+            <a class="btn btn-outline" href="${duongDanTrang('product.html', { id: sanPham.id })}">Khắc tên</a>
+            <button type="button" class="btn btn-primary" data-them-vao-gio="${chuoiAnToan(sanPham.id)}" ${hetHang ? 'disabled' : ''}>
+              ${hetHang ? 'Hết hàng' : 'Thêm vào giỏ'}
+            </button>
+          </div>
+        </article>`;
+    }
+
+    function ganThemVaoGio(khung) {
+      khung.querySelectorAll('[data-them-vao-gio]').forEach((nut) =>
+        nut.addEventListener('click', async (suKien) => {
+          suKien.preventDefault();
+          if (!taiKhoan.layNguoiDung()) {
+            thongBao.loi('Vui lòng đăng nhập');
+            return;
+          }
+          nut.disabled = true;
+          try {
+            await gioHang.them(nut.dataset.themVaoGio, 1);
+            thongBao.thanhCong('Đã thêm vào giỏ hàng');
+            hienNutDaThem(nut);
+          } catch (loi) {
+            thongBao.loi(loi?.response?.data?.message || 'Lỗi khi thêm giỏ hàng');
+          } finally {
+            nut.disabled = false;
+          }
+        }),
+      );
+    }
+
+    function layCacSoTrang(trang, tongSoTrang) {
+      if (tongSoTrang <= 7) {
+        const ds = [];
+        for (let i = 1; i <= tongSoTrang; i += 1) ds.push(i);
+        return ds;
+      }
+      const ds = [1];
+      const batDau = Math.max(2, trang - 1);
+      const ketThuc = Math.min(tongSoTrang - 1, trang + 1);
+      if (batDau > 2) ds.push('ba-cham');
+      for (let i = batDau; i <= ketThuc; i += 1) ds.push(i);
+      if (ketThuc < tongSoTrang - 1) ds.push('ba-cham');
+      ds.push(tongSoTrang);
+      return ds;
+    }
+
+    function vePhanTrang(duLieu) {
+      const khung = document.getElementById('khung-phan-trang');
+      const tongSoTrang = Number(duLieu.totalPages) || 0;
+      const tongSanPham = duLieu.total || 0;
+      if (!khung || tongSoTrang <= 1) {
+        if (khung) khung.innerHTML = '';
+        return;
+      }
+      const nutSoTrang = layCacSoTrang(trangHienTai, tongSoTrang)
+        .map((muc) => {
+          if (muc === 'ba-cham') return '<span class="pagination-ellipsis" aria-hidden="true">…</span>';
+          const dangXem = muc === trangHienTai;
+          return `<button type="button" class="pagination-btn ${dangXem ? 'active' : ''}" data-trang="${muc}" ${dangXem ? 'aria-current="page"' : ''}>${muc}</button>`;
+        })
+        .join('');
+      khung.innerHTML = `
+        <p class="pagination-summary">${tongSanPham} sản phẩm · Trang ${trangHienTai}/${tongSoTrang}</p>
+        <div class="pagination-controls">
+          <button type="button" class="pagination-btn" data-trang="${trangHienTai - 1}" ${trangHienTai <= 1 ? 'disabled' : ''} aria-label="Trang trước">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          ${nutSoTrang}
+          <button type="button" class="pagination-btn" data-trang="${trangHienTai + 1}" ${trangHienTai >= tongSoTrang ? 'disabled' : ''} aria-label="Trang sau">
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>`;
+      khung.querySelectorAll('[data-trang]:not([disabled])').forEach((nut) =>
+        nut.addEventListener('click', () => {
+          const trangMoi = Number(nut.dataset.trang);
+          if (trangMoi === trangHienTai) return;
+          trangHienTai = trangMoi;
+          capNhatUrl();
+          taiSanPham();
+          document.getElementById('khung-san-pham')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }),
+      );
+      veIcon();
+    }
+
+    async function taiSanPham() {
+      const khung = document.getElementById('khung-san-pham');
+      const oDem = document.getElementById('so-san-pham');
+      if (!khung) return;
+      khung.innerHTML = '<p class="loading-block">Đang tải sản phẩm...</p>';
+      const phanTrang = document.getElementById('khung-phan-trang');
+      if (phanTrang) phanTrang.innerHTML = '';
+
+      const thamSo = { page: trangHienTai, limit: SO_MOI_TRANG, categoryId: danhMucId, ...thamSoSapXep() };
+      if (tuKhoa) thamSo.search = tuKhoa;
+      if (giaTu !== '') thamSo.minPrice = Number(giaTu);
+      if (giaDen !== '') thamSo.maxPrice = Number(giaDen);
+
+      try {
+        const duLieu = await api.get('/products', { params: thamSo });
+        const danhSach = duLieu.items || [];
+        const tong = Number(duLieu.total) || 0;
+        if (oDem) oDem.textContent = tong ? `${tong} sản phẩm` : 'Không có sản phẩm phù hợp';
+        if (!danhSach.length) {
+          khung.innerHTML = '<div class="card empty-block">Không có sản phẩm trong nhóm này.</div>';
+          return;
+        }
+        khung.innerHTML = `<div class="product-grid">${danhSach.map((sp) => htmlTheSanPham(sp)).join('')}</div>`;
+        trangHienTai = Number(duLieu.page) || trangHienTai;
+        vePhanTrang(duLieu);
+        ganThemVaoGio(khung);
+        veIcon();
+      } catch {
+        if (oDem) oDem.textContent = '';
+        khung.innerHTML = '<div class="card empty-block">Không tải được sản phẩm. Thử lại sau.</div>';
+      }
+    }
+
+    function apDungLoc() {
+      const form = document.getElementById('form-loc');
+      const ketQua = kiemTraForm(
+        [
+          { id: 'tu-khoa', label: 'Từ khóa', rules: ['maxLength:100'] },
+          { id: 'gia-tu', label: 'Giá từ', rules: ['number', 'min:0'] },
+          { id: 'gia-den', label: 'Giá đến', rules: ['number', 'min:0'] },
+        ],
+        form,
+        thongBao,
+      );
+      if (!ketQua) return;
+      const tu = ketQua.values['gia-tu'];
+      const den = ketQua.values['gia-den'];
+      if (tu !== '' && den !== '' && Number(tu) > Number(den)) {
+        thongBao.loi('Giá từ không được lớn hơn giá đến');
+        return;
+      }
+      tuKhoa = String(ketQua.values['tu-khoa']).trim();
+      giaTu = tu;
+      giaDen = den;
+      sapXep = document.getElementById('sap-xep').value || 'moi';
+      trangHienTai = 1;
+      capNhatUrl();
+      taiSanPham();
+    }
+
+    function veChiTiet(danhMuc) {
+      document.title = danhMuc ? `${danhMuc.name} - Folio & Quill` : 'Danh mục - Folio & Quill';
+      const moTa = danhMuc?.description
+        ? `<p class="cat-desc">${chuoiAnToan(danhMuc.description)}</p>`
+        : '';
+      const than = danhMuc
+        ? `
+          <h1 class="cat-title">${chuoiAnToan(danhMuc.name)}</h1>
+          ${moTa}
+          <div class="cat-tools">
+            <p class="cat-count" id="so-san-pham"></p>
+            <form class="cat-loc" id="form-loc">
+              <div class="form-field">
+                <label class="visually-hidden" for="tu-khoa">Tìm trong danh mục</label>
+                <input id="tu-khoa" class="form-input" type="search" placeholder="Tìm trong danh mục" value="${chuoiAnToan(tuKhoa)}" maxlength="100" />
+              </div>
+              <div class="form-field">
+                <label class="visually-hidden" for="gia-tu">Giá từ</label>
+                <input id="gia-tu" class="form-input" type="number" min="0" placeholder="Giá từ" value="${chuoiAnToan(giaTu)}" />
+              </div>
+              <div class="form-field">
+                <label class="visually-hidden" for="gia-den">Giá đến</label>
+                <input id="gia-den" class="form-input" type="number" min="0" placeholder="Giá đến" value="${chuoiAnToan(giaDen)}" />
+              </div>
+              <div class="form-field">
+                <label class="visually-hidden" for="sap-xep">Sắp xếp</label>
+                <select id="sap-xep" class="form-input">
+                  <option value="moi" ${sapXep === 'moi' ? 'selected' : ''}>Mới về</option>
+                  <option value="gia-tang" ${sapXep === 'gia-tang' ? 'selected' : ''}>Giá tăng</option>
+                  <option value="gia-giam" ${sapXep === 'gia-giam' ? 'selected' : ''}>Giá giảm</option>
+                  <option value="ten" ${sapXep === 'ten' ? 'selected' : ''}>Tên</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Lọc</button>
+            </form>
+          </div>
+          <div id="khung-san-pham"></div>
+          <nav id="khung-phan-trang" aria-label="Phân trang sản phẩm"></nav>`
+        : `
+          <h1 class="cat-title">Không thấy danh mục</h1>
+          <p class="cat-desc">Danh mục này không còn. Chọn một nhóm trong danh sách.</p>`;
+
+      goc.innerHTML = `
+        <div class="cat-spread">
+          ${htmlMucLuc(danhMuc?.id || '')}
+          <div class="cat-goods">${than}</div>
+        </div>`;
+
+      const form = document.getElementById('form-loc');
+      if (!form) return;
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        apDungLoc();
+      });
+      document.getElementById('sap-xep').addEventListener('change', apDungLoc);
+      tuDongXoaLoi(form);
+      taiSanPham();
+    }
+
+    async function khoiDong() {
+      try {
+        danhSachDanhMuc = await api.get('/categories');
+        if (!Array.isArray(danhSachDanhMuc)) danhSachDanhMuc = [];
+      } catch {
+        goc.innerHTML = `
+          <div class="cat-mo">
+            <h1>Danh mục</h1>
+            <p>Không tải được danh mục. Thử tải lại trang.</p>
+          </div>`;
+        return;
+      }
+
+      if (!danhMucId) {
+        veMucLuc();
+        return;
+      }
+
+      const coSan = danhSachDanhMuc.find((dm) => dm.id === danhMucId);
+      if (coSan) {
+        veChiTiet(coSan);
+        return;
+      }
+
+      try {
+        const mot = await api.get(`/categories/${danhMucId}`);
+        veChiTiet(mot);
+      } catch {
+        veChiTiet(null);
+      }
+    }
+
+    khoiDong();
+  </script>
+</body>
+</html>

@@ -96,6 +96,48 @@ strong, b { font-weight: 500; }
   outline-offset: 2px;
 }
 
+@media (pointer: fine) {
+  html.con-tro-bat body,
+  html.con-tro-bat body * { cursor: none; }
+  html.con-tro-bat body :is(input, textarea, select, [contenteditable]),
+  html.con-tro-bat body :is(input, textarea, select, [contenteditable]) *,
+  html.con-tro-bat .chat-dock,
+  html.con-tro-bat .chat-dock *,
+  html.con-tro-bat .chat-panel,
+  html.con-tro-bat .chat-panel * { cursor: auto; }
+}
+.con-tro {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 120;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.con-tro-cham {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--navy);
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.con-tro-chu {
+  position: absolute;
+  color: #fff;
+  font-family: var(--font-ui), sans-serif;
+  font-size: 11px;
+  letter-spacing: .14em;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.con-tro-xem .con-tro-cham { transform: scale(8); }
+.con-tro-xem .con-tro-chu { opacity: 1; }
+html.con-tro-tat .con-tro { opacity: 0; }
+
 /* display trên class (flex/grid) sẽ ghi đè [hidden] của trình duyệt nếu không khóa lại */
 [hidden] { display: none !important; }
 
@@ -297,6 +339,7 @@ strong, b { font-weight: 500; }
   font-size: 14px;
 }
 .nav-link {
+  position: relative;
   padding: 12px 0;
   border-radius: 0;
   border-bottom: 1px solid transparent;
@@ -306,12 +349,33 @@ strong, b { font-weight: 500; }
   display: inline-flex;
   align-items: center;
 }
+.nav-link::after,
+.footer-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+}
 .nav-link:hover,
 .nav-link.active,
+.nav-link:focus-visible,
 .fq-has-mega:hover > .nav-link {
   background: none;
   color: var(--navy);
-  border-bottom-color: var(--navy);
+}
+.nav-link:hover::after,
+.nav-link.active::after,
+.nav-link:focus-visible::after,
+.fq-has-mega:hover > .nav-link::after,
+.footer-links a:hover::after,
+.footer-links a:focus-visible::after {
+  transform: scaleX(1);
 }
 .fq-has-mega { position: static; }
 .fq-mega {
@@ -378,8 +442,9 @@ strong, b { font-weight: 500; }
 }
 .cart-badge[hidden] { display: none; }
 
-.site-main { flex: 1; max-width: 80rem; margin: 0 auto; width: 100%; padding: 2rem 1.5rem; }
+.site-main { flex: 1 0 auto; max-width: 80rem; margin: 0 auto; width: 100%; padding: 2rem 1.5rem; }
 .site-main-home { max-width: none; margin: 0; padding: 0; }
+.pin-spacer { flex: none !important; width: 100% !important; max-width: 100% !important; }
 
 .site-footer {
   background: var(--navy);
@@ -436,6 +501,7 @@ strong, b { font-weight: 500; }
 }
 .footer-heading { font-weight: 400; letter-spacing: .16em; text-transform: uppercase; font-size: 12px; margin-bottom: .75rem; color: #fff; }
 .footer-links { display: flex; flex-direction: column; gap: .5rem; color: rgba(255, 255, 255, .78); }
+.footer-links a { position: relative; display: inline-block; width: fit-content; }
 .footer-links a:hover { color: #fff; }
 .footer-social { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
 .footer-social a { color: #fff; display: inline-grid; place-items: center; width: 36px; height: 36px; }
@@ -522,9 +588,12 @@ strong, b { font-weight: 500; }
   font-size: 15px;
   font-weight: 400;
   letter-spacing: .2em;
+  line-height: 1.6;
   text-transform: uppercase;
   text-align: center;
   color: var(--navy);
+  display: block;
+  min-height: 1.6em;
 }
 
 /* Dòng tiêu đề có icon: <div class="page-heading"><i></i><h1 class="section-title"></h1></div> */

@@ -93,7 +93,7 @@ async function xuLyDangXuat(duongDanTrangChu) {
 
 /**
  * Dựng header + footer cho trang khách hàng.
- * @param {string} trangHienTai khóa để tô sáng menu: 'home' | 'orders' | 'cart' | ''
+ * @param {string} trangHienTai khóa để tô sáng menu: 'home' | 'category' | 'orders' | 'cart' | ''
  */
 export function dungKhungKhachHang(trangHienTai) {
   const nguoiDung = taiKhoan.layNguoiDung();
@@ -193,6 +193,7 @@ export function dungKhungKhachHang(trangHienTai) {
         </div>
       </div>
       ${lienKet('index.html#san-pham-tieu-bieu', 'Mới về')}
+      <a href="category.html" class="nav-link ${trangHienTai === 'category' ? 'active' : ''}" ${trangHienTai === 'category' ? 'aria-current="page"' : ''}>Danh mục</a>
       ${lienKet('index.html#muc-danh-muc', 'Sổ tay')}
       ${lienKet('index.html#muc-danh-muc', 'Bút ký')}
       ${lienKet('index.html#muc-danh-muc', 'Đồ dùng bàn')}
@@ -220,6 +221,7 @@ export function dungKhungKhachHang(trangHienTai) {
         <h2 class="footer-heading">Cửa hàng</h2>
         <ul class="footer-links">
           <li><a href="index.html#san-pham-tieu-bieu">Sản phẩm</a></li>
+          <li><a href="category.html">Danh mục</a></li>
           <li><a href="index.html#bo-suu-tap">Bộ sưu tập</a></li>
           <li><a href="index.html#b2b-form-section">Doanh nghiệp</a></li>
         </ul>
@@ -353,121 +355,96 @@ function theoDoiSoLuongGioHang(daDangNhap) {
 }
 
 // ------------------------------------------------------------- Khung trang admin
-//
-// Thanh menu admin: HTML được dựng ở đây, VỊ TRÍ do CSS quyết định.
-// Xem chú thích đầu file frontend/css/admin.css
-//
-// Hiện tại: thanh dọc BÊN TRÁI (#admin-aside trong mỗi admin/*.html)
-// - Giữ / lật sang TRÁI: không đổi file này (đã là trái). Kiểm tra admin.css: left: 0
-// - Đưa LÊN TRÊN: chủ yếu sửa admin.css (.admin-aside thành hàng ngang).
-//   HTML bên dưới (logo → menu → user) giữ nguyên, CSS flex-direction: row sẽ xếp 1 hàng.
+// Mục lục trái, xếp theo việc trong ngày. Ô tìm của từng trang nằm trong trang đó.
 
-// Menu admin — tên + icon Material Symbols y như Stitch
 const MENU_ADMIN = [
-  { duongDan: 'dashboard.html', nhan: 'Dashboard', icon: 'dashboard', khoa: 'dashboard' },
-  { duongDan: 'products.html', nhan: 'Sản phẩm', icon: 'inventory_2', khoa: 'products' },
-  { duongDan: 'categories.html', nhan: 'Danh mục', icon: 'category', khoa: 'categories' },
+  { nhom: 'Hôm nay', duongDan: 'dashboard.html', nhan: 'Tổng quan', icon: 'layout-dashboard', khoa: 'dashboard' },
+  { duongDan: 'orders.html', nhan: 'Đơn hàng', icon: 'receipt', khoa: 'orders' },
   { duongDan: 'inventory.html', nhan: 'Tồn kho', icon: 'warehouse', khoa: 'inventory' },
-  { duongDan: 'orders.html', nhan: 'Đơn hàng', icon: 'shopping_cart_checkout', khoa: 'orders' },
-  { duongDan: 'users.html', nhan: 'Người dùng', icon: 'group', khoa: 'users' },
-  { duongDan: 'vouchers.html', nhan: 'Voucher & Khuyến mãi', icon: 'confirmation_number', khoa: 'vouchers' },
-  { duongDan: 'reviews.html', nhan: 'Đánh giá & Phản hồi', icon: 'rate_review', khoa: 'reviews' },
+  { nhom: 'Hàng hóa', duongDan: 'products.html', nhan: 'Sản phẩm', icon: 'package', khoa: 'products' },
+  { duongDan: 'categories.html', nhan: 'Danh mục', icon: 'folder-tree', khoa: 'categories' },
+  { nhom: 'Khách hàng', duongDan: 'users.html', nhan: 'Người dùng', icon: 'users', khoa: 'users' },
+  { duongDan: 'reviews.html', nhan: 'Đánh giá', icon: 'message-square', khoa: 'reviews' },
+  { duongDan: 'vouchers.html', nhan: 'Voucher', icon: 'ticket', khoa: 'vouchers' },
 ];
 
-function damBaoMaterialSymbols() {
-  if (document.getElementById('material-symbols-admin')) return;
-  const link = document.createElement('link');
-  link.id = 'material-symbols-admin';
-  link.rel = 'stylesheet';
-  link.href =
-    'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap';
-  document.head.appendChild(link);
-}
-
 /**
- * Dựng sidebar + topbar admin giống Stitch.
- * @param {string} trangHienTai khóa mục menu đang mở (xem MENU_ADMIN)
+ * Dựng mục lục và thanh tài khoản.
+ * @param {string} trangHienTai khóa mục đang mở (xem MENU_ADMIN)
  */
 export function dungKhungAdmin(trangHienTai) {
   const nguoiDung = taiKhoan.layNguoiDung();
   const sidebar = document.getElementById('admin-aside');
-  const ten = nguoiDung?.fullName || 'Trần Huy Hoàng';
+  const ten = nguoiDung?.fullName || 'Quản trị';
+  const chuCai = ten.trim().charAt(0).toUpperCase() || 'Q';
 
   ganFavicon();
-  damBaoMaterialSymbols();
   damBaoKhungAdminMain();
 
-  const cacMucMenu = MENU_ADMIN.map(
-    (muc) => `
-      <a href="${muc.duongDan}" class="nav-item ${trangHienTai === muc.khoa ? 'active' : ''}"
-        ${trangHienTai === muc.khoa ? 'aria-current="page"' : ''}>
-        <span class="ms material-symbols-outlined">${muc.icon}</span>
+  let nhomTruoc = '';
+  const cacMucMenu = MENU_ADMIN.map((muc) => {
+    const nhanNhom =
+      muc.nhom && muc.nhom !== nhomTruoc
+        ? `<p class="admin-nav-label">${muc.nhom}</p>`
+        : '';
+    if (muc.nhom) nhomTruoc = muc.nhom;
+    const dangMo = trangHienTai === muc.khoa;
+    return `
+      ${nhanNhom}
+      <a href="${muc.duongDan}" class="nav-item ${dangMo ? 'active' : ''}"
+        ${dangMo ? 'aria-current="page"' : ''}>
+        <i data-lucide="${muc.icon}"></i>
         <span>${muc.nhan}</span>
-      </a>`,
-  ).join('');
+      </a>`;
+  }).join('');
 
   sidebar.innerHTML = `
     <div class="admin-aside-inner">
       <div class="admin-brand-bar">
         <a href="dashboard.html" class="admin-brand">
-          <img src="${URL_LOGO}" alt="Logo Văn phòng phẩm Trần Huy Hoàng" class="brand-logo" />
-          <div>
-            <div class="admin-brand-name">Trần Huy Hoàng</div>
-            <div class="admin-brand-sub">Admin Portal</div>
-          </div>
+          <span class="admin-brand-est">Est. 2018</span>
+          <span class="admin-brand-name">Folio &amp; Quill</span>
+          <span class="admin-brand-sub">Quầy quản trị</span>
         </a>
-        <button type="button" class="admin-brand-toggle" title="Thu gọn / Mở rộng" aria-label="Thu gọn menu">
-          <span class="ms material-symbols-outlined">menu_open</span>
-        </button>
       </div>
-      <div class="admin-nav-label">Hệ thống quản trị</div>
-      <nav class="admin-nav">${cacMucMenu}</nav>
+      <nav class="admin-nav" aria-label="Mục quản trị">${cacMucMenu}</nav>
       <div class="admin-aside-footer">
-        <div class="admin-system-row">
-          <div class="admin-system-left">
-            <span class="ms material-symbols-outlined">cloud_done</span>
-            <span>Hệ thống online</span>
-          </div>
-          <span class="admin-system-ver">v2.4.0</span>
-        </div>
+        <a href="../index.html" class="admin-shop-link">
+          <i data-lucide="arrow-up-right"></i>
+          <span>Mở cửa hàng</span>
+        </a>
       </div>
     </div>`;
 
   const topbar = document.getElementById('admin-topbar');
   if (topbar) {
     topbar.innerHTML = `
-      <div class="admin-topbar-search">
-        <span class="ms material-symbols-outlined">search</span>
-        <input type="search" placeholder="Tìm kiếm mã hàng, đơn đặt, khách hàng..."
-          aria-label="Tìm kiếm nhanh" id="tim-nhanh-admin" />
-      </div>
+      <button type="button" class="admin-menu-btn" id="nut-menu-admin" aria-label="Mở menu">
+        <i data-lucide="menu"></i>
+      </button>
       <div class="admin-topbar-right">
-        <button type="button" class="admin-bell" aria-label="Thông báo">
-          <span class="ms material-symbols-outlined">notifications</span>
-          <span class="admin-bell-badge">5</span>
-        </button>
         <div class="admin-topbar-user">
           <div class="admin-topbar-meta">
             <strong>${chuoiAnToan(ten)}</strong>
-            <span>Super Admin</span>
+            <span>Quản trị</span>
           </div>
-          <div class="admin-topbar-avatar" aria-hidden="true">
-            <span class="ms material-symbols-outlined">person</span>
-          </div>
+          <div class="admin-topbar-avatar" aria-hidden="true">${chuoiAnToan(chuCai)}</div>
         </div>
         <button type="button" class="admin-logout-link" id="nut-dang-xuat-topbar">
-          <span class="ms material-symbols-outlined">logout</span>
+          <i data-lucide="log-out"></i>
           <span>Đăng xuất</span>
         </button>
       </div>`;
     document.getElementById('nut-dang-xuat-topbar')?.addEventListener('click', () => xuLyDangXuat('../index.html'));
-    document.getElementById('tim-nhanh-admin')?.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-      const q = e.target.value.trim();
-      if (!q) return;
-      location.href = `orders.html?q=${encodeURIComponent(q)}`;
-    });
   }
+
+  const shell = document.querySelector('.admin-shell');
+  document.getElementById('nut-menu-admin')?.addEventListener('click', () => {
+    shell?.classList.toggle('menu-mo');
+  });
+  document.getElementById('admin-scrim')?.addEventListener('click', () => {
+    shell?.classList.remove('menu-mo');
+  });
 
   veIcon();
 }
@@ -475,9 +452,17 @@ export function dungKhungAdmin(trangHienTai) {
 /** Bọc .admin-content bằng .admin-main + topbar nếu HTML cũ chưa có */
 function damBaoKhungAdminMain() {
   const shell = document.querySelector('.admin-shell');
+  if (!shell) return;
+  if (!document.getElementById('admin-scrim')) {
+    const scrim = document.createElement('button');
+    scrim.id = 'admin-scrim';
+    scrim.className = 'admin-scrim';
+    scrim.type = 'button';
+    scrim.setAttribute('aria-label', 'Đóng menu');
+    shell.appendChild(scrim);
+  }
   const content = document.querySelector('.admin-shell > .admin-content, .admin-shell > main.admin-content');
-  if (!shell || !content) return;
-  if (document.querySelector('.admin-main')) return;
+  if (!content || document.querySelector('.admin-main')) return;
 
   const main = document.createElement('div');
   main.className = 'admin-main';
